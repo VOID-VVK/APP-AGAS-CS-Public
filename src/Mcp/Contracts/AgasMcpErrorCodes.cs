@@ -1,0 +1,55 @@
+namespace AppAgasCs.Mcp.Contracts;
+
+public static class AgasMcpErrorCodes
+{
+    public const string NoOpenProject = "AGAS_NO_OPEN_PROJECT";
+    public const string PathRejected = "AGAS_PATH_REJECTED";
+    public const string AssetNotFound = "AGAS_ASSET_NOT_FOUND";
+    public const string SceneNotFound = "AGAS_SCENE_NOT_FOUND";
+    public const string LayerNotFound = "AGAS_LAYER_NOT_FOUND";
+    public const string ImageNotFound = "AGAS_IMAGE_NOT_FOUND";
+    public const string PromptNotFound = "AGAS_PROMPT_NOT_FOUND";
+    public const string LayerLocked = "AGAS_LAYER_LOCKED";
+    public const string LayerHidden = "AGAS_LAYER_HIDDEN";
+    public const string LayerNotEditable = "AGAS_LAYER_NOT_EDITABLE";
+    public const string SelectionInvalid = "AGAS_SELECTION_INVALID";
+    public const string ImageNotSelected = "AGAS_IMAGE_NOT_SELECTED";
+    public const string AiUnsupportedOperation = "AGAS_AI_UNSUPPORTED_OP";
+    public const string AiNoProfile = "AGAS_AI_NO_PROFILE";
+    public const string AiJobNotFound = "AGAS_AI_JOB_NOT_FOUND";
+    public const string AiJobNotSucceeded = "AGAS_AI_JOB_NOT_SUCCEEDED";
+    public const string AiContextStale = "AGAS_AI_CONTEXT_STALE";
+    public const string AiBusy = "AGAS_AI_BUSY";
+    public const string AiProviderFailed = "AGAS_AI_PROVIDER_FAILED";
+    public const string AiCanceled = "AGAS_AI_CANCELED";
+    public const string AiProfileNotFound = "AGAS_AI_PROFILE_NOT_FOUND";
+    public const string AiProviderUnavailable = "AGAS_AI_PROVIDER_UNAVAILABLE";
+    public const string AiCredentialMissing = "AGAS_AI_CREDENTIAL_MISSING";
+    public const string AiModelInvalid = "AGAS_AI_MODEL_INVALID";
+    public const string AiSettingsConflict = "AGAS_AI_SETTINGS_CONFLICT";
+    public const string InvalidOperation = "AGAS_INVALID_OPERATION";
+    public const string SaveFailed = "AGAS_SAVE_FAILED";
+    public const string ProjectReadOnly = "AGAS_PROJECT_READ_ONLY";
+    public const string ProjectRootUnsafe = "AGAS_PROJECT_ROOT_UNSAFE";
+    public const string ProjectRefInvalid = "AGAS_PROJECT_REF_INVALID";
+    public const string ProjectAlreadyOpen = "AGAS_PROJECT_ALREADY_OPEN";
+    public const string ProjectDirty = "AGAS_PROJECT_DIRTY";
+    public const string AiJobsActive = "AGAS_AI_JOBS_ACTIVE";
+    public const string ToolBusy = "AGAS_TOOL_BUSY";
+    public const string SceneInvalid = "AGAS_SCENE_INVALID";
+    public const string SceneSnapshotTooLarge = "AGAS_SCENE_SNAPSHOT_TOO_LARGE";
+    public const string CursorInvalid = "AGAS_CURSOR_INVALID";
+    public const string CursorCapacity = "AGAS_CURSOR_CAPACITY";
+    public const string ImportSourceNotFound = "AGAS_IMPORT_SOURCE_NOT_FOUND";
+    public const string ImportInvalid = "AGAS_IMPORT_INVALID";
+    public const string ImportTooLarge = "AGAS_IMPORT_TOO_LARGE";
+    public const string PackageInvalid = "AGAS_PACKAGE_INVALID";
+    public const string PackageTooLarge = "AGAS_PACKAGE_TOO_LARGE";
+    public const string RateLimited = "AGAS_RATE_LIMITED";
+    public const string Busy = "AGAS_BUSY";
+    public const string Stopped = "AGAS_STOPPED";
+    public const string McpNotRunning = "AGAS_MCP_NOT_RUNNING";
+    public const string PortInUse = "AGAS_PORT_IN_USE";
+    public const string Timeout = "AGAS_TIMEOUT";
+    public const string InternalError = "AGAS_INTERNAL_ERROR";
+}

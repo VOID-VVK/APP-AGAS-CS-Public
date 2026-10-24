@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>APP-AGAS-CS.AiAdapter.Contracts</AssemblyName>
+    <RootNamespace>AppAgasCs.Features.Ai.Generation</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>APP-AGAS-CS.AiAdapter.Contracts</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>AGAS</Authors>
+    <Description>Stable, engine-neutral contracts for third-party AGAS AI image adapters.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Features/Ai/Generation/IAiImageGenerationAdapter.cs" Link="IAiImageGenerationAdapter.cs" />
+    <Compile Include="../../src/Features/Ai/Generation/AiGenerationContracts.cs" Link="AiGenerationContracts.cs" />
+    <Compile Include="../../src/Features/Ai/Generation/AiGenerationDiagnosticContracts.cs" Link="AiGenerationDiagnosticContracts.cs" />
+    <Compile Include="../../src/Features/Ai/Generation/AiGenerationException.cs" Link="AiGenerationException.cs" />
+    <None Include="../../config/ai-providers/README.md" Pack="true" PackagePath="/" Link="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>APP-AGAS-CS</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>APP-AGAS-CS.Godot.Acceptance</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>APP-AGAS-CS.Core.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

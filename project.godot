@@ -1,0 +1,26 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="APP-AGAS-CS"
+run/main_scene="res://src/UI/Main.tscn"
+config/features=PackedStringArray("4.6", "C#")
+config/icon="res://icon.svg"
+
+[dotnet]
+
+project/assembly_name="APP-AGAS-CS"
+
+[internationalization]
+
+locale/test="en"
+locale/fallback="en"
+locale/translations=PackedStringArray("res://Localization/ui.en.translation", "res://Localization/ui.zh_CN.translation")

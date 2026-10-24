@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "openai-compatible",
+  "displayName": "GPT Image / OpenAI Compatible",
+  "adapterKind": "openai-compatible",
+  "defaultBaseUrl": "https://api.openai.com/v1/",
+  "models": [
+    { "modelName": "gpt-image-2", "label": "GPT Image 2（推荐）", "recommended": true },
+    { "modelName": "gpt-image-2.5-flare", "label": "GPT Image 2.5 Flare", "recommended": false },
+    { "modelName": "gpt-image-2.5-sunburst", "label": "GPT Image 2.5 Sunburst", "recommended": false },
+    { "modelName": "grok-imagine-image-quality", "label": "Grok Imagine Quality", "recommended": false },
+    { "modelName": "grok-imagine-image", "label": "Grok Imagine Fast", "recommended": false },
+    { "modelName": "grok-imagine-image-2.0", "label": "Grok Imagine Image 2.0", "recommended": false }
+  ],
+  "capabilities": ["textToImage", "referenceEdit", "regionEdit", "nativeAlphaMask"],
+  "credential": { "kind": "profileSettings", "label": "API Key", "settingsKey": "apiKey" },
+  "baseUrlHint": "OpenAI-compatible 服务通常使用带 /v1 的 Base URL。",
+  "baseUrlPlaceholder": "https://api.openai.com/v1/",
+  "order": 10
+}

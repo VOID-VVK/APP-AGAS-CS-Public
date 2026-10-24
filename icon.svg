@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AGAS abstract grid canvas icon">
+  <rect width="64" height="64" rx="14" fill="#101820"/>
+  <rect x="12" y="12" width="40" height="40" rx="6" fill="#172A36" stroke="#6EE7D8" stroke-width="3"/>
+  <path d="M22 20v24M32 20v24M42 20v24M20 22h24M20 32h24M20 42h24" stroke="#2E5564" stroke-width="2" stroke-linecap="round"/>
+  <path d="M22 44 32 20l10 24M26 36h12" stroke="#F6C85F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="22" cy="44" r="3" fill="#6EE7D8"/>
+  <circle cx="32" cy="20" r="3" fill="#6EE7D8"/>
+  <circle cx="42" cy="44" r="3" fill="#6EE7D8"/>
+</svg>

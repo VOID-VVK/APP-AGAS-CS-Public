@@ -1,0 +1,115 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>AppAgasCs</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AgasAdapterContractsProjectDirectory>$(MSBuildThisFileDirectory)sdk/APP-AGAS-CS.AiAdapter.Contracts</AgasAdapterContractsProjectDirectory>
+    <AgasAdapterContractsProjectFile>$(AgasAdapterContractsProjectDirectory)/APP-AGAS-CS.AiAdapter.Contracts.csproj</AgasAdapterContractsProjectFile>
+    <AgasAdapterContractsPackageVersion>1.0.0</AgasAdapterContractsPackageVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)config/ai-providers/*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>ai-providers.defaults/%(Filename)%(Extension)</TargetPath>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)config/ai-provider.schema.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>ai-provider-sdk/ai-provider.schema.json</TargetPath>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)config/ai-providers/README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>ai-provider-sdk/README.md</TargetPath>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="10.0.7" />
+  </ItemGroup>
+  <!--
+    Godot hosts the C# assembly directly and does not load this project's runtimeconfig
+    FrameworkReference graph. MCP is a paid release feature backed by ASP.NET Core, so the
+    ASP.NET Core shared-framework closure must be copied app-local for Godot Debug, Release,
+    and ExportRelease builds instead of relying on FrameworkReference at process startup.
+  -->
+  <ItemGroup>
+    <AgasAspNetCoreKnownFrameworkReference Include="@(KnownFrameworkReference->WithMetadataValue('RuntimeFrameworkName', 'Microsoft.AspNetCore.App')->WithMetadataValue('TargetFramework', '$(TargetFramework)'))" />
+  </ItemGroup>
+  <PropertyGroup>
+    <AgasInjectAspNetCoreRuntimeAssetsForGodot Condition="'$(AgasInjectAspNetCoreRuntimeAssetsForGodot)' == ''">true</AgasInjectAspNetCoreRuntimeAssetsForGodot>
+    <_AgasAspNetCoreKnownFrameworkReferencePattern>&lt;KnownFrameworkReference Include="Microsoft\.AspNetCore\.App"[\s\S]*?TargetFramework="$(TargetFramework)"[\s\S]*?LatestRuntimeFrameworkVersion="([^"]+)"</_AgasAspNetCoreKnownFrameworkReferencePattern>
+    <AspNetCoreRuntimeVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(NETCoreSdkBundledVersionsProps)')), '$(_AgasAspNetCoreKnownFrameworkReferencePattern)').Groups[1].Value)</AspNetCoreRuntimeVersion>
+    <AspNetCoreRuntimePath>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(NetCoreTargetingPackRoot)', '..', 'shared', 'Microsoft.AspNetCore.App', '$(AspNetCoreRuntimeVersion)'))))</AspNetCoreRuntimePath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(AgasInjectAspNetCoreRuntimeAssetsForGodot)' == 'true' and Exists('$(AspNetCoreRuntimePath)')">
+    <AgasAspNetCoreRuntimeAssembly Include="$(AspNetCoreRuntimePath)/Microsoft.AspNetCore*.dll" />
+    <AgasAspNetCoreRuntimeAssembly Remove="$(AspNetCoreRuntimePath)/Microsoft.AspNetCore.RateLimiting.dll" />
+    <AgasAspNetCoreRuntimeAssembly Include="$(AspNetCoreRuntimePath)/Microsoft.Extensions.Features.dll" />
+    <AgasAspNetCoreRuntimeAssembly Include="$(AspNetCoreRuntimePath)/Microsoft.Extensions.ObjectPool.dll" />
+    <AgasAspNetCoreRuntimeAssembly Include="$(AspNetCoreRuntimePath)/Microsoft.Net.Http.Headers.dll" />
+  </ItemGroup>
+  <Target Name="ValidateAspNetCoreRuntimeAssetsForGodot"
+          BeforeTargets="_ComputeUserRuntimeAssemblies;ResolveLockFileCopyLocalFiles"
+          Condition="'$(AgasInjectAspNetCoreRuntimeAssetsForGodot)' == 'true'">
+    <Error Condition="'$(AspNetCoreRuntimeVersion)' == ''"
+           Text="Unable to derive the Microsoft.AspNetCore.App runtime patch for $(TargetFramework) from the .NET SDK KnownFrameworkReference metadata." />
+    <Error Condition="!Exists('$(AspNetCoreRuntimePath)')"
+           Text="Microsoft.AspNetCore.App runtime $(AspNetCoreRuntimeVersion) was not found at '$(AspNetCoreRuntimePath)'. Install the matching ASP.NET Core runtime for the dotnet SDK used to build APP-AGAS-CS; failing fast because Godot does not load this project's runtimeconfig FrameworkReference graph and would otherwise produce an app missing MCP/ASP.NET Core runtime assets." />
+  </Target>
+  <Target Name="AddAspNetCoreRuntimeAssetsForGodot"
+          BeforeTargets="_ComputeUserRuntimeAssemblies;ResolveLockFileCopyLocalFiles"
+          Condition="'$(AgasInjectAspNetCoreRuntimeAssetsForGodot)' == 'true'">
+    <ItemGroup>
+      <ReferencePath Include="@(AgasAspNetCoreRuntimeAssembly)">
+        <CopyLocal>true</CopyLocal>
+        <IncludeRuntimeDependency>true</IncludeRuntimeDependency>
+        <DestinationSubDirectory></DestinationSubDirectory>
+        <DestinationSubPath>%(Filename)%(Extension)</DestinationSubPath>
+      </ReferencePath>
+      <ReferenceCopyLocalPaths Include="@(AgasAspNetCoreRuntimeAssembly)">
+        <DestinationSubDirectory></DestinationSubDirectory>
+        <DestinationSubPath>%(Filename)%(Extension)</DestinationSubPath>
+        <CopyLocal>true</CopyLocal>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+  <Target Name="PackAiAdapterContractsForSdkStaging"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <!--
+      ProjectReference completes the Contracts Build before the host Build
+      returns. Pack only after that point; generated nupkg files must never
+      participate in the earlier Content/CopyToOutput pipeline.
+    -->
+    <MSBuild Projects="$(AgasAdapterContractsProjectFile)"
+             Targets="Pack"
+             BuildInParallel="false"
+             Properties="Configuration=$(Configuration);NoBuild=true;PackageOutputPath=$(AgasAdapterContractsProjectDirectory)/bin/$(Configuration)" />
+  </Target>
+  <Target Name="CopyAiAdapterSdkArtifacts"
+          AfterTargets="Build"
+          DependsOnTargets="PackAiAdapterContractsForSdkStaging"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_AgasAdapterContractsOutput>$(AgasAdapterContractsProjectDirectory)/bin/$(Configuration)/net8.0</_AgasAdapterContractsOutput>
+      <_AgasAdapterSdkOutput>$(TargetDir)ai-provider-sdk</_AgasAdapterSdkOutput>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AgasAdapterSdkArtifact Include="$(_AgasAdapterContractsOutput)/APP-AGAS-CS.AiAdapter.Contracts.dll" />
+      <_AgasAdapterSdkArtifact Include="$(_AgasAdapterContractsOutput)/APP-AGAS-CS.AiAdapter.Contracts.xml" />
+      <_AgasAdapterSdkArtifact Include="$(AgasAdapterContractsProjectDirectory)/bin/$(Configuration)/APP-AGAS-CS.AiAdapter.Contracts.$(AgasAdapterContractsPackageVersion).nupkg" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(_AgasAdapterSdkArtifact.Identity)')"
+           Text="AI Adapter SDK artifact was not built: %(_AgasAdapterSdkArtifact.Identity)" />
+    <MakeDir Directories="$(_AgasAdapterSdkOutput)" />
+    <Copy SourceFiles="@(_AgasAdapterSdkArtifact)"
+          DestinationFolder="$(_AgasAdapterSdkOutput)"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

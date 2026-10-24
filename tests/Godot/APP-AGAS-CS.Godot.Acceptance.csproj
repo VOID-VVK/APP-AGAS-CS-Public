@@ -1,0 +1,61 @@
+<Project>
+  <!-- Godot must know the real project root before Sdk.props computes script paths. -->
+  <PropertyGroup>
+    <GodotProjectDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))</GodotProjectDir>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj/</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)/</IntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Godot.NET.Sdk" Version="4.6.1" />
+  <Import Project="../../APP-AGAS-CS.Common.props" />
+  <PropertyGroup>
+    <RootNamespace>AppAgasCs.GodotAcceptance</RootNamespace>
+    <AssemblyName>APP-AGAS-CS.Godot.Acceptance</AssemblyName>
+    <PackageId>APP-AGAS-CS.Godot.Acceptance</PackageId>
+    <!-- Never write the acceptance composition into Godot's production output. -->
+    <BaseOutputPath>$(MSBuildThisFileDirectory)bin/</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GodotAcceptanceCompileGlob Condition="'$(GodotAcceptanceCompileGlob)' == ''">*.cs</GodotAcceptanceCompileGlob>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(GodotProjectDir)src/**/*.cs" />
+    <Compile Remove="$(GodotProjectDir)src/Features/Ai/Generation/IAiImageGenerationAdapter.cs" />
+    <Compile Remove="$(GodotProjectDir)src/Features/Ai/Generation/AiGenerationContracts.cs" />
+    <Compile Remove="$(GodotProjectDir)src/Features/Ai/Generation/AiGenerationDiagnosticContracts.cs" />
+    <Compile Remove="$(GodotProjectDir)src/Features/Ai/Generation/AiGenerationException.cs" />
+    <Compile Include="$(GodotProjectDir)tests/Godot/$(GodotAcceptanceCompileGlob)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(GodotProjectDir)sdk/APP-AGAS-CS.AiAdapter.Contracts/APP-AGAS-CS.AiAdapter.Contracts.csproj" />
+    <ProjectReference Include="$(GodotProjectDir)tests/Fixtures/AiAdapterPlugin/Vendor.AgasAdapter.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=Debug" />
+    <ProjectReference Include="$(GodotProjectDir)tests/Fixtures/AiAdapterConflict/Vendor.AgasAdapter.Conflict.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=Debug" />
+  </ItemGroup>
+  <Target Name="CopyAiAdapterFixtures" AfterTargets="Build">
+    <PropertyGroup>
+      <_AdapterFixtureOutput>$(GodotProjectDir)tests/Fixtures/AiAdapterPlugin/bin/Debug/net8.0</_AdapterFixtureOutput>
+      <_AdapterConflictOutput>$(GodotProjectDir)tests/Fixtures/AiAdapterConflict/bin/Debug/net8.0</_AdapterConflictOutput>
+      <_AdapterFixtureTarget>$(TargetDir)ai-adapter-fixtures</_AdapterFixtureTarget>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AdapterFixture Include="$(_AdapterFixtureOutput)/Vendor.AgasAdapter.dll" />
+      <_AdapterFixture Include="$(_AdapterFixtureOutput)/Vendor.AgasAdapter.deps.json" />
+      <_AdapterFixture Include="$(_AdapterFixtureOutput)/Vendor.Adapter.Dependency.dll" />
+      <_AdapterFixture Include="$(_AdapterConflictOutput)/Vendor.AgasAdapter.Conflict.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(_AdapterFixtureTarget)" />
+    <Copy SourceFiles="@(_AdapterFixture)" DestinationFolder="$(_AdapterFixtureTarget)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="ValidateAcceptanceBuildIsolation" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(AssemblyName)' == 'APP-AGAS-CS'"
+           Text="Godot acceptance must use a test-only assembly name and must never replace the production assembly." />
+    <Error Condition="!$([System.String]::Copy('$(OutputPath)').StartsWith('$(MSBuildThisFileDirectory)bin/'))"
+           Text="Godot acceptance output must stay below tests/Godot/bin; actual output is '$(OutputPath)'." />
+  </Target>
+  <Import Project="Sdk.targets" Sdk="Godot.NET.Sdk" Version="4.6.1" />
+</Project>

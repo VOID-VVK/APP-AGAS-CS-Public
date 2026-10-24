@@ -1,0 +1,18 @@
+<Project Sdk="Godot.NET.Sdk/4.6.1">
+  <Import Project="APP-AGAS-CS.Common.props" />
+  <PropertyGroup>
+    <AssemblyName>APP-AGAS-CS</AssemblyName>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="sdk/**/*.cs" />
+    <Compile Remove="src/Features/Ai/Generation/IAiImageGenerationAdapter.cs" />
+    <Compile Remove="src/Features/Ai/Generation/AiGenerationContracts.cs" />
+    <Compile Remove="src/Features/Ai/Generation/AiGenerationDiagnosticContracts.cs" />
+    <Compile Remove="src/Features/Ai/Generation/AiGenerationException.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="sdk/APP-AGAS-CS.AiAdapter.Contracts/APP-AGAS-CS.AiAdapter.Contracts.csproj" />
+  </ItemGroup>
+</Project>

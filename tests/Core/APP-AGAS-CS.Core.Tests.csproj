@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GodotProjectDir>$(MSBuildProjectDirectory)/../..</GodotProjectDir>
+    <NoWarn>$(NoWarn);CS8785</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../APP-AGAS-CS.csproj" />
+    <ProjectReference Include="../Fixtures/AiAdapterPlugin/Vendor.AgasAdapter.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=Debug" />
+    <ProjectReference Include="../Fixtures/AiAdapterConflict/Vendor.AgasAdapter.Conflict.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=Debug" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <!-- Core tests consume the already-built Godot assembly. Running Godot's script/plugin
+       generators again against the referenced assembly creates a duplicate global Main
+       registration (CS0436), so remove only those analyzers from this test compilation. -->
+  <Target Name="RemoveGodotSourceGeneratorsFromCoreTests" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="$([System.String]::Copy('%(Analyzer.Filename)').StartsWith('Godot.SourceGenerators'))" />
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyAiAdapterFixtures" AfterTargets="Build">
+    <PropertyGroup>
+      <_AdapterFixtureOutput>$(MSBuildProjectDirectory)/../Fixtures/AiAdapterPlugin/bin/Debug/net8.0</_AdapterFixtureOutput>
+      <_AdapterConflictOutput>$(MSBuildProjectDirectory)/../Fixtures/AiAdapterConflict/bin/Debug/net8.0</_AdapterConflictOutput>
+      <_AdapterFixtureTarget>$(TargetDir)ai-adapter-fixtures</_AdapterFixtureTarget>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AdapterFixture Include="$(_AdapterFixtureOutput)/Vendor.AgasAdapter.dll" />
+      <_AdapterFixture Include="$(_AdapterFixtureOutput)/Vendor.AgasAdapter.deps.json" />
+      <_AdapterFixture Include="$(_AdapterFixtureOutput)/Vendor.Adapter.Dependency.dll" />
+      <_AdapterFixture Include="$(_AdapterConflictOutput)/Vendor.AgasAdapter.Conflict.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(_AdapterFixtureTarget)" />
+    <Copy SourceFiles="@(_AdapterFixture)" DestinationFolder="$(_AdapterFixtureTarget)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

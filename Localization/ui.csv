@@ -1,0 +1,744 @@
+keys,en,zh_CN
++ 片段,+ Fragment,+ 片段
+新增提示词片段,Add prompt fragment,新增提示词片段
+合并预览,Merged preview,合并预览
+拖动左侧分隔条可调整合并预览宽度,Drag the left divider to resize the preview,拖动左侧分隔条可调整合并预览宽度
+未选择当前图层。,No active layer selected.,未选择当前图层。
+启用或停用该提示词片段,Enable or disable this prompt fragment,启用或停用该提示词片段
+支持多行输入，修改即时同步；拖动右下角调整高度,Multiline input syncs instantly; drag the bottom-right corner to resize,支持多行输入，修改即时同步；拖动右下角调整高度
+上移提示词片段,Move prompt fragment up,上移提示词片段
+下移提示词片段,Move prompt fragment down,下移提示词片段
+删除提示词片段,Delete prompt fragment,删除提示词片段
+未选择当前图层，提示词只读。,No active layer; prompts are read-only.,未选择当前图层，提示词只读。
+图层已隐藏，提示词只读。,Layer is hidden; prompts are read-only.,图层已隐藏，提示词只读。
+图层已锁定，提示词只读。,Layer is locked; prompts are read-only.,图层已锁定，提示词只读。
+新增,Add,新增
+新增图层,Add layer,新增图层
+重命名当前图层,Rename active layer,重命名当前图层
+删除当前图层,Delete active layer,删除当前图层
+上移当前图层,Move active layer up,上移当前图层
+下移当前图层,Move active layer down,下移当前图层
+打开当前图层提示词,Open active layer prompts,打开当前图层提示词
+无图层,No layers,无图层
+当前场景没有图层,This scene has no layers,当前场景没有图层
+重命名图层,Rename layer,重命名图层
+图层名称,Layer name,图层名称
++ 工具,+ Tool,+ 工具
++ 工具链,+ Chain,+ 工具链
+刷新,Refresh,刷新
+保存,Save,保存
+删除,Delete,删除
+添加,Add,添加
+移除,Remove,移除
+上移,Move up,上移
+下移,Move down,下移
+创建,Create,创建
+名称,Name,名称
+读取工具,Read tools,读取工具
+工具,Tools,工具
+工具链,Tool chains,工具链
+执行顺序,Run order,执行顺序
+新建工具链,New tool chain,新建工具链
+新建自定义工具,New custom tool,新建自定义工具
+请输入名称。,Enter a name.,请输入名称。
+未保存的工具链,Unsaved tool chain,未保存的工具链
+添加至少一个工具后保存。,Add at least one tool before saving.,添加至少一个工具后保存。
+内置工具 · 只读,Built-in tool · Read-only,内置工具 · 只读
+自定义工具,Custom tool,自定义工具
+加载工具,Load tools,加载工具
+工具链至少需要一个工具。,A tool chain needs at least one tool.,工具链至少需要一个工具。
+内置工具不可修改。,Built-in tools cannot be edited.,内置工具不可修改。
+已保存。,Saved.,已保存。
+已删除。,Deleted.,已删除。
+未选择工具,No tool selected,未选择工具
+将图片缩放至 256×256。,Resize the image to 256×256.,将图片缩放至 256×256。
+裁剪图片左上角的 128×128 区域。,Crop the top-left 128×128 region.,裁剪图片左上角的 128×128 区域。
+执行边缘连通抠图。,Remove edge-connected background.,执行边缘连通抠图。
+执行棋盘格抠图。,Remove checkerboard background.,执行棋盘格抠图。
+执行浅色背景抠图。,Remove light background.,执行浅色背景抠图。
+去除白色边缘杂色。,Remove white edge fringing.,去除白色边缘杂色。
+由当前工具定义执行图片处理。,Process the image using this tool definition.,由当前工具定义执行图片处理。
+在文件管理器中显示,Show in file manager,在文件管理器中显示
+项目目录不可用。,Project folder is unavailable.,项目目录不可用。
+没有匹配的图片文件。,No matching image files.,没有匹配的图片文件。
+输入图层提示词文本,Enter layer prompt text,输入图层提示词文本
+上下拖动调整片段高度,Drag vertically to resize the fragment,上下拖动调整片段高度
+搜索文件名…,Search filenames…,搜索文件名…
+按图片文件名搜索,Search by image filename,按图片文件名搜索
+搜索文件名,Search filenames,搜索文件名
+文件,Files,文件
+场景,Scenes,场景
+新增场景,Add scene,新增场景
+重命名,Rename,重命名
+导出场景包…,Export scene package…,导出场景包…
+导出为系统下载目录下的 ZIP 文件（包含图片、工具和工具链代码）,Export a ZIP to Downloads with images and tool/chain code,导出为系统下载目录下的 ZIP 文件（包含图片、工具和工具链代码）
+导入场景包…,Import scene package…,导入场景包…
+选择场景包 ZIP，程序将自动解压并导入为全新场景,Select a scene package ZIP to extract and import as a new scene,选择场景包 ZIP，程序将自动解压并导入为全新场景
+导入场景包（选择 ZIP 文件）,Import scene package (select ZIP),导入场景包（选择 ZIP 文件）
+*.zip ; AGAS 场景包,*.zip ; AGAS scene package,*.zip ; AGAS 场景包
+scene.json ; 旧版场景包清单,scene.json ; Legacy scene package manifest,scene.json ; 旧版场景包清单
+重命名场景,Rename scene,重命名场景
+场景名称,Scene name,场景名称
+无法打开：所选目录不是有效的 AGAS 项目。请使用“新建项目”选择该文件夹以初始化。,Cannot open: not a valid AGAS project. Use New Project to initialize this folder.,无法打开：所选目录不是有效的 AGAS 项目。请使用“新建项目”选择该文件夹以初始化。
+打开或创建项目失败。,Failed to open or create the project.,打开或创建项目失败。
+无法打开 AGAS 项目。,Cannot open the AGAS project.,无法打开 AGAS 项目。
+无法加载 AGAS 项目文件。,Cannot load the AGAS project file.,无法加载 AGAS 项目文件。
+无法打开：项目的活动场景标识无效。,Cannot open: invalid active scene ID.,无法打开：项目的活动场景标识无效。
+无法打开：活动场景路径无效。,Cannot open: invalid active scene path.,无法打开：活动场景路径无效。
+无法加载项目的活动场景。,Cannot load the active scene.,无法加载项目的活动场景。
+设置,Settings,设置
+设置...,Settings...,设置...
+启用 MCP,Enable MCP,启用 MCP
+请求主界面启用或停止 MCP；本设置窗口不直接持有或启停 Host。,Ask the main workspace to start or stop MCP; this dialog does not control the host directly.,请求主界面启用或停止 MCP；本设置窗口不直接持有或启停 Host。
+固定 MCP Endpoint，端口不可编辑。,Fixed MCP endpoint; the port cannot be edited.,固定 MCP Endpoint，端口不可编辑。
+状态,Status,状态
+切换开关只向 Main 发出请求；实际 Host 生命周期由 Main/MCP 接线处理。,This switch sends requests to Main; Main/MCP manages the host lifecycle.,切换开关只向 Main 发出请求；实际 Host 生命周期由 Main/MCP 接线处理。
+发送 AI 填充,AI fill,发送 AI 填充
+仅其他可见图层发送,Send other visible layers,仅其他可见图层发送
+所有图层发送,Send all layers,所有图层发送
+自定义提示词发送,Send custom prompt,自定义提示词发送
+自定义 + 所有图层,Custom + all layers,自定义 + 所有图层
+合并可见图层到当前层,Merge visible layers into active layer,合并可见图层到当前层
+发送中…,Sending…,发送中…
+项目已打开。,Project opened.,项目已打开。
+未选中图片,No image selected,未选中图片
+E 编辑模式下单击图片可选中并拖拽,In E edit mode click an image to select and drag it,E 编辑模式下单击图片可选中并拖拽
+无,None,无
+未设置,Not set,未设置
+Q 是最终完整画布：已有非透明内容保持不变，全部透明或空白区域会被补全；W 仅用于把 Q 内旧问题区先抠成透明,Q is the full output canvas: existing opaque content stays intact and transparent areas are filled. W cuts unwanted content inside Q to transparency.,Q 是最终完整画布：已有非透明内容保持不变，全部透明或空白区域会被补全；W 仅用于把 Q 内旧问题区先抠成透明
+未选择模型,No model selected,未选择模型
+工具箱,Toolbox,工具箱
+使用当前活动图层作为参考并发送到 AI 生图,Generate with the active layer as reference,使用当前活动图层作为参考并发送到 AI 生图
+仅使用当前层之外的可见图层作为参考，生成结果仍写入当前层,Use other visible layers as reference; write results to the active layer,仅使用当前层之外的可见图层作为参考，生成结果仍写入当前层
+使用所有可见图层作为参考并发送到 AI 生图,Generate with all visible layers as reference,使用所有可见图层作为参考并发送到 AI 生图
+使用当前活动图层并追加自定义提示词,Use the active layer with an additional custom prompt,使用当前活动图层并追加自定义提示词
+使用所有可见图层并追加自定义提示词,Use all visible layers with an additional custom prompt,使用所有可见图层并追加自定义提示词
+把其他可见图层合成一张图并放到当前图层；隐藏图层和当前图层自己不参与合并,Composite other visible layers into the active layer; exclude hidden layers and the active layer itself,把其他可见图层合成一张图并放到当前图层；隐藏图层和当前图层自己不参与合并
+尚无工具链，请先在工具箱组装,No tool chains; create one in the toolbox first,尚无工具链，请先在工具箱组装
+请先选中可编辑图片,Select an editable image first,请先选中可编辑图片
+正在执行工具…,Running tool…,正在执行工具…
+工具已执行，生成图片已添加到当前图层；可撤销。,Tool completed; output added to the active layer. Undo is available.,工具已执行，生成图片已添加到当前图层；可撤销。
+运行工具,Run tool,运行工具
+请先框选 Q 参考区域,Select a Q reference region first,请先框选 Q 参考区域
+没有可作为参考的其他可见图层,No other visible layers available as reference,没有可作为参考的其他可见图层
+合并可见图层,Merge visible layers,合并可见图层
+当前图层隐藏、锁定或项目只读时无法合并,Cannot merge while the active layer is hidden or locked or the project is read-only,当前图层隐藏、锁定或项目只读时无法合并
+可见图层合并失败。,Failed to merge visible layers.,可见图层合并失败。
+发送 AI 请求,Send AI request,发送 AI 请求
+追加自定义提示词,Append custom prompt,追加自定义提示词
+输入要追加到当前图层提示词后的内容,Enter text to append to the active layer prompt,输入要追加到当前图层提示词后的内容
+当前项目、场景或图层不可用，未发送 AI 请求。,Project/scene/layer unavailable; no AI request sent.,当前项目、场景或图层不可用，未发送 AI 请求。
+自定义提示词为空，当前未发送请求。,Custom prompt is empty; no request sent.,自定义提示词为空，当前未发送请求。
+当前没有可用的目标图层，请先选择一个图层；未发送生图请求。,No target layer. Select a layer first; no generation request sent.,当前没有可用的目标图层，请先选择一个图层；未发送生图请求。
+无法开始生图,Cannot start generation,无法开始生图
+知道了,OK,知道了
+MCP 已修改项目。,MCP modified the project.,MCP 已修改项目。
+MCP 变更已保存。,MCP changes saved.,MCP 变更已保存。
+修改场景说明,Edit scene notes,修改场景说明
+已更新场景说明。,Scene notes updated.,已更新场景说明。
+修改画布,Edit canvas,修改画布
+画布已更新。,Canvas updated.,画布已更新。
+导出场景包失败,Scene package export failed,导出场景包失败
+导出失败。,Export failed.,导出失败。
+ZIP 场景包已导出,ZIP scene package exported,ZIP 场景包已导出
+打开所在文件夹,Open containing folder,打开所在文件夹
+导出目录不存在，无法打开。,Cannot open: export folder does not exist.,导出目录不存在，无法打开。
+未保存,Unsaved,未保存
+MCP 设置,MCP settings,MCP 设置
+关闭,Close,关闭
+撤销,Undo,撤销
+重做,Redo,重做
+详细信息,Details,详细信息
+图片路径,Image path,图片路径
+层级顺序,Stack order,层级顺序
+横向缩放,Scale X,横向缩放
+纵向缩放,Scale Y,纵向缩放
+旋转角度,Rotation,旋转角度
+透明度,Opacity,透明度
+文件预览,File preview,文件预览
+从左侧文件列表选择图片后预览。,Select an image in the file list to preview it.,从左侧文件列表选择图片后预览。
+场景说明,Scene notes,场景说明
+"未选择图片实例。
+选中画布中的图片后可编辑位置、缩放、旋转与透明度。","No image selected.
+Select an image on the canvas to edit position, scale, rotation and opacity.","未选择图片实例。
+选中画布中的图片后可编辑位置、缩放、旋转与透明度。"
+修改图片属性,Edit image properties,修改图片属性
+选择项目文件夹,Select project folder,选择项目文件夹
+打开项目,Open project,打开项目
+从最近项目中移除,Remove from recent projects,从最近项目中移除
+项目,Projects,项目
+最近项目,Recent projects,最近项目
+打开 AGAS 设置,Open AGAS settings,打开 AGAS 设置
+欢迎使用 AGAS,Welcome to AGAS,欢迎使用 AGAS
+新建项目,New project,新建项目
+选择文件夹：已有 AGAS 项目则直接打开，否则初始化为新项目,Select a folder to open an existing AGAS project or create a new one,选择文件夹：已有 AGAS 项目则直接打开，否则初始化为新项目
+搜索项目名称或路径,Search project name or path,搜索项目名称或路径
+按项目名称或完整路径筛选,Filter by project name or full path,按项目名称或完整路径筛选
+双击或按 Enter 打开；右键可查看更多操作,Double-click or press Enter to open; right-click for more actions,双击或按 Enter 打开；右键可查看更多操作
+双击项目或按 Enter 打开；右键可从最近项目中移除。,Double-click or press Enter to open; right-click to remove from recent projects.,双击项目或按 Enter 打开；右键可从最近项目中移除。
+"暂无最近项目
+点击“新建项目”选择文件夹开始（已有项目会直接打开）。","No recent projects
+Click New Project to select a folder (existing projects open directly).","暂无最近项目
+点击“新建项目”选择文件夹开始（已有项目会直接打开）。"
+"没有匹配的项目
+请尝试搜索其他名称或路径。","No matching projects
+Try another name or path.","没有匹配的项目
+请尝试搜索其他名称或路径。"
+选择项目文件夹（已有项目则打开，否则新建）,Select folder (open or create project),选择项目文件夹（已有项目则打开，否则新建）
+正在打开项目…,Opening project…,正在打开项目…
+请选择项目目录。,Select a project folder.,请选择项目目录。
+项目操作失败，请检查所选目录。,Project operation failed. Check the selected folder.,项目操作失败，请检查所选目录。
+已从最近项目中移除。项目文件未被删除。,Removed from recent projects. Project files were not deleted.,已从最近项目中移除。项目文件未被删除。
+设置分类,Settings categories,设置分类
+恢复默认,Reset,恢复默认
+已配置连接,Configured connections,已配置连接
+选择要编辑和用于后续 AI 任务的连接,Select the connection to edit and use for future AI tasks,选择要编辑和用于后续 AI 任务的连接
+例如：AxonCat 主连接,e.g. AxonCat primary,例如：AxonCat 主连接
+填写统一生图网关地址；切换模型不会修改此地址。,Enter the image gateway URL; switching models does not change it.,填写统一生图网关地址；切换模型不会修改此地址。
+输入 API Key,Enter API Key,输入 API Key
+删除连接,Delete connection,删除连接
+删除 AI 连接,Delete AI connection,删除 AI 连接
+删除所选连接及其已保存的凭据,Delete the selected connection and its saved credentials,删除所选连接及其已保存的凭据
+添加连接,Add connection,添加连接
+添加 AI 连接,Add AI connection,添加 AI 连接
+添加一组独立的服务地址和密钥,Add a separate service URL and key,添加一组独立的服务地址和密钥
+清除 API Key,Clear API Key,清除 API Key
+保存连接,Save connection,保存连接
+保存 AI 连接,Save AI connection,保存 AI 连接
+保存此连接的名称、地址和密钥,"Save the connection name, URL and key",保存此连接的名称、地址和密钥
+确认删除所选连接及其已保存的凭据？此操作不可撤销。,Delete this connection and its saved credentials? This cannot be undone.,确认删除所选连接及其已保存的凭据？此操作不可撤销。
+确认清除所选连接已保存的 API Key？,Clear the saved API Key for this connection?,确认清除所选连接已保存的 API Key？
+清除,Clear,清除
+AI 连接,AI connections,AI 连接
+外观,Appearance,外观
+连接名称,Connection name,连接名称
+用于区分多个 AI 连接,Name used to identify this AI connection,用于区分多个 AI 连接
+连接服务地址,Service URL,连接服务地址
+所有生图模型共用此连接地址,All image models share this connection URL,所有生图模型共用此连接地址
+连接 API Key,Connection API Key,连接 API Key
+所有生图模型共用此连接密钥,All image models share this connection key,所有生图模型共用此连接密钥
+连接信息,Connection details,连接信息
+在左侧选择连接即可启用；顶部工具栏负责切换生图模型。,Select a connection on the left to activate it; switch image models in the top toolbar.,在左侧选择连接即可启用；顶部工具栏负责切换生图模型。
+地址与密钥,URL and key,地址与密钥
+此连接的地址和密钥供 GPT Image、Grok 与 Gemini 模型共用。,GPT Image/Grok/Gemini models share this connection's URL and key.,此连接的地址和密钥供 GPT Image、Grok 与 Gemini 模型共用。
+不会回显原值。留空表示保持已保存的 Key。,The original value is never shown. Leave blank to keep the saved key.,不会回显原值。留空表示保持已保存的 Key。
+调整整个应用的界面字体大小。更改会立即预览并自动保存。,Adjust the app-wide font size. Changes preview instantly and save automatically.,调整整个应用的界面字体大小。更改会立即预览并自动保存。
+全局字体大小,Global font size,全局字体大小
+当前启用连接,Active connection,当前启用连接
+点击以启用此连接,Click to activate this connection,点击以启用此连接
+选择左侧连接即可启用；所有模型共用该连接的 Base URL 和 API Key。,Select a connection on the left; all models share its Base URL and API Key.,选择左侧连接即可启用；所有模型共用该连接的 Base URL 和 API Key。
+加载 AI 连接失败。,Failed to load AI connections.,加载 AI 连接失败。
+添加 AI 连接失败。,Failed to add AI connection.,添加 AI 连接失败。
+已保存。所有模型将使用此连接的地址和 Key。,Saved. All models will use this connection's URL and key.,已保存。所有模型将使用此连接的地址和 Key。
+已保存。请为当前服务地址填写 API Key。,Saved. Enter the API Key for this service URL.,已保存。请为当前服务地址填写 API Key。
+保存 AI 连接失败；Key 未被输出。,Failed to save AI connection; key was not exposed.,保存 AI 连接失败；Key 未被输出。
+删除 AI 连接失败；原配置已尽力恢复。,Failed to delete AI connection; attempted to restore the original settings.,删除 AI 连接失败；原配置已尽力恢复。
+读取凭据状态失败；凭据未被输出。,Failed to read credential status; credentials were not exposed.,读取凭据状态失败；凭据未被输出。
+已清除 API Key。,API Key cleared.,已清除 API Key。
+清除凭据失败；凭据未被输出。,Failed to clear credentials; credentials were not exposed.,清除凭据失败；凭据未被输出。
+切换当前 AI 连接失败。,Failed to switch active AI connection.,切换当前 AI 连接失败。
+AI 中转站名称必须为 1-120 个字符。,AI gateway name must be 1–120 characters.,AI 中转站名称必须为 1-120 个字符。
+AI 连接名称必须为 1-120 个字符。,AI connection name must be 1–120 characters.,AI 连接名称必须为 1-120 个字符。
+未保存 API Key。,No API Key saved.,未保存 API Key。
+清除当前连接的 API Key,Clear this connection's API Key,清除当前连接的 API Key
+清除当前连接已保存的 API Key,Clear the saved API Key for this connection,清除当前连接已保存的 API Key
+保存外观设置失败，已保留原字体大小。,Failed to save appearance settings; original font size retained.,保存外观设置失败，已保留原字体大小。
+请先把工具加入工具链，再从画布右键工具箱运行。,Add the tool to a chain first; run it from the canvas context menu.,请先把工具加入工具链，再从画布右键工具箱运行。
+请先选中可编辑图层中的图片。,Select an image in an editable layer first.,请先选中可编辑图层中的图片。
+执行期间项目、场景、图层或所选图片已变化，结果未应用。,Project/scene/layer/selection changed during execution; result not applied.,执行期间项目、场景、图层或所选图片已变化，结果未应用。
+画布目标已变化或不可编辑，工具结果未应用。,Canvas target changed or is not editable; tool result not applied.,画布目标已变化或不可编辑，工具结果未应用。
+所选工具在执行期间发生变化，请刷新后重试。,Selected tool changed during execution. Refresh and retry.,所选工具在执行期间发生变化，请刷新后重试。
+准备 AI 请求,Prepare AI request,准备 AI 请求
+当前项目已关闭，无法准备区域生成请求。,Project closed; cannot prepare region generation.,当前项目已关闭，无法准备区域生成请求。
+画布区域或参考合成图无法准备，请检查 Q/W 区域及图片资源。,Cannot prepare region/reference composite. Check Q/W regions and image assets.,画布区域或参考合成图无法准备，请检查 Q/W 区域及图片资源。
+当前项目已关闭，无法应用生成结果。,Project closed; cannot apply generation result.,当前项目已关闭，无法应用生成结果。
+请求期间项目已切换，未应用生成结果。,Project switched during the request; result not applied.,请求期间项目已切换，未应用生成结果。
+原场景已不存在，未应用生成结果。,Original scene no longer exists; result not applied.,原场景已不存在，未应用生成结果。
+提交后画布内容已变化，未应用生成结果。,Canvas changed after submission; result not applied.,提交后画布内容已变化，未应用生成结果。
+生成结果正在写入，跳过重复回写。,Result is being applied; duplicate write skipped.,生成结果正在写入，跳过重复回写。
+完整 Q 生成结果无法合成，未修改画布。,Cannot composite the full Q result; canvas unchanged.,完整 Q 生成结果无法合成，未修改画布。
+目标图层不可编辑，完整 Q 生成结果无法写回。,Target layer is not editable; cannot apply full Q result.,目标图层不可编辑，完整 Q 生成结果无法写回。
+已把完整 Q 生成结果覆盖写入请求时的图层；项目尚未保存。,Full Q result replaced content in the original target layer; project not saved.,已把完整 Q 生成结果覆盖写入请求时的图层；项目尚未保存。
+图片已应用，但自动保存失败，请按 Ctrl/Cmd+S 重试。,Image applied but autosave failed. Press Ctrl/Cmd+S to retry.,图片已应用，但自动保存失败，请按 Ctrl/Cmd+S 重试。
+已把完整 Q 生成结果写入请求时的图层并自动保存；可使用撤销恢复。,Full Q result applied to the original target layer and autosaved; undo is available.,已把完整 Q 生成结果写入请求时的图层并自动保存；可使用撤销恢复。
+目标图层不可编辑，完整 Q 生成结果无法写回原场景。,Target layer is not editable; cannot apply full Q result to the original scene.,目标图层不可编辑，完整 Q 生成结果无法写回原场景。
+图片已写入原场景，但自动保存失败，请切回该场景后按 Ctrl/Cmd+S 重试。,Image applied to the original scene but autosave failed. Return to that scene and press Ctrl/Cmd+S.,图片已写入原场景，但自动保存失败，请切回该场景后按 Ctrl/Cmd+S 重试。
+已把完整 Q 生成结果写入请求时的场景图层并保存。切回该场景即可看到。,Full Q result applied and saved in the original scene layer. Return to that scene to view it.,已把完整 Q 生成结果写入请求时的场景图层并保存。切回该场景即可看到。
+删除生成结果,Delete generation result,删除生成结果
+请先框选 Q 参考区域。,Select a Q reference region first.,请先框选 Q 参考区域。
+W 必须位于 Q 区域内。,W must be inside Q.,W 必须位于 Q 区域内。
+Q 参考区域最大支持 8192×8192 像素。,Q reference region supports up to 8192×8192 pixels.,Q 参考区域最大支持 8192×8192 像素。
+Q 参考区域尺寸过大。,Q reference region is too large.,Q 参考区域尺寸过大。
+初始化失败。,Initialization failed.,初始化失败。
+加载 project.tres 失败。,Failed to load project.tres.,加载 project.tres 失败。
+删除场景,Delete scene,删除场景
+至少保留 1 个场景。,Keep at least one scene.,至少保留 1 个场景。
+导出场景包,Export scene package,导出场景包
+当前项目不可修改，无法导出场景包。,Project is not editable; cannot export scene package.,当前项目不可修改，无法导出场景包。
+导出失败：项目未打开。,Export failed: no project open.,导出失败：项目未打开。
+导出失败：场景不可用。,Export failed: scene unavailable.,导出失败：场景不可用。
+导出失败：无法定位系统下载目录。,Export failed: cannot locate Downloads folder.,导出失败：无法定位系统下载目录。
+导入场景包,Import scene package,导入场景包
+ZIP 场景包,ZIP scene package,ZIP 场景包
+旧版 scene.json 场景包,Legacy scene.json package,旧版 scene.json 场景包
+预览已折叠。,Preview collapsed.,预览已折叠。
+预览已展开。,Preview expanded.,预览已展开。
+面板尺寸已更新。,Panel sizes updated.,面板尺寸已更新。
+底部面板已切换。,Bottom panel switched.,底部面板已切换。
+文件 / 场景,Files / Scenes,文件 / 场景
+左栏已最小化。,Left sidebar minimized.,左栏已最小化。
+左栏已恢复。,Left sidebar restored.,左栏已恢复。
+属性,Properties,属性
+属性面板已最小化。,Properties panel minimized.,属性面板已最小化。
+属性面板已恢复。,Properties panel restored.,属性面板已恢复。
+提示词 / 工具,Prompts / Tools,提示词 / 工具
+底部面板已最小化。,Bottom panel minimized.,底部面板已最小化。
+底部面板已恢复。,Bottom panel restored.,底部面板已恢复。
+AGAS - 未打开项目,AGAS - No project open,AGAS - 未打开项目
+保存项目、布局和当前场景（Ctrl/Cmd+S）,Save project layout and active scene (Ctrl/Cmd+S),保存项目、布局和当前场景（Ctrl/Cmd+S）
+撤销当前编辑器（Ctrl/Cmd+Z）,Undo in active editor (Ctrl/Cmd+Z),撤销当前编辑器（Ctrl/Cmd+Z）
+重做当前编辑器（Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y）,Redo in active editor (Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y),重做当前编辑器（Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y）
+网格 24,Grid 24,网格 24
+设置网格为 24 像素,Set grid size to 24 pixels,设置网格为 24 像素
+网格 48,Grid 48,网格 48
+设置网格为 48 像素,Set grid size to 48 pixels,设置网格为 48 像素
+自定义正整数网格尺寸,Custom positive integer grid size,自定义正整数网格尺寸
+吸附,Snap,吸附
+吸附网格,Snap to grid,吸附网格
+关闭当前项目,Close active project,关闭当前项目
+AI 生成任务：并发上限/进行中,AI tasks: concurrency limit/active,AI 生成任务：并发上限/进行中
+选择生图模型,Select image model,选择生图模型
+生图模型选择,Image model selector,生图模型选择
+Grok Imagine Image 2.0 生成质量,Grok Imagine Image 2.0 quality,Grok Imagine Image 2.0 生成质量
+生图质量选择,Generation quality selector,生图质量选择
+中等,Medium,中等
+低,Low,低
+视图,View,视图
+最小化或恢复工作区面板,Minimize or restore workspace panels,最小化或恢复工作区面板
+最小化/恢复 文件/场景面板,Minimize/restore Files/Scenes,最小化/恢复 文件/场景面板
+最小化/恢复 属性面板,Minimize/restore Properties,最小化/恢复 属性面板
+最小化/恢复 提示词/工具面板,Minimize/restore Prompts/Tools,最小化/恢复 提示词/工具面板
+提示词,Prompts,提示词
+Q 框选,Q Select,Q 框选
+W 抠空,W Cutout,W 抠空
+E 编辑/拖拽,E Edit/Drag,E 编辑/拖拽
+打开工具和工具链管理,Manage tools and tool chains,打开工具和工具链管理
+图层：无 · Q：未设置 · W：未设置,Layer: None · Q: Not set · W: Not set,图层：无 · Q：未设置 · W：未设置
+缩小场景画布（最低 10%）,Zoom out (minimum 10%),缩小场景画布（最低 10%）
+当前场景画布缩放比例；点击恢复到 100%,Canvas zoom; click to reset to 100%,当前场景画布缩放比例；点击恢复到 100%
+放大场景画布（最高 800%）,Zoom in (maximum 800%),放大场景画布（最高 800%）
+适应窗口,Fit,适应窗口
+显示全部可见图片，自动缩放不超过 100%,Fit all visible images with zoom capped at 100%,显示全部可见图片，自动缩放不超过 100%
+删除图层,Delete layer,删除图层
+移动图层,Move layer,移动图层
+新增提示词,Add prompt,新增提示词
+新增提示词失败。,Failed to add prompt.,新增提示词失败。
+已新增提示词片段。,Prompt fragment added.,已新增提示词片段。
+删除提示词,Delete prompt,删除提示词
+删除提示词失败。,Failed to delete prompt.,删除提示词失败。
+已删除提示词片段。,Prompt fragment deleted.,已删除提示词片段。
+更新提示词,Update prompt,更新提示词
+提示词文本更新失败。,Failed to update prompt text.,提示词文本更新失败。
+提示词文本已更新。,Prompt text updated.,提示词文本已更新。
+提示词启用状态更新失败。,Failed to update prompt enabled state.,提示词启用状态更新失败。
+提示词启用状态已更新。,Prompt enabled state updated.,提示词启用状态已更新。
+更新提示词分类,Update prompt category,更新提示词分类
+提示词分类更新失败。,Failed to update prompt category.,提示词分类更新失败。
+提示词分类已更新。,Prompt category updated.,提示词分类已更新。
+移动提示词,Move prompt,移动提示词
+移动提示词失败。,Failed to move prompt.,移动提示词失败。
+提示词顺序已更新。,Prompt order updated.,提示词顺序已更新。
+切换当前图层,Switch active layer,切换当前图层
+修改图层可见性,Change layer visibility,修改图层可见性
+修改图层锁定状态,Change layer lock state,修改图层锁定状态
+修改图层分享状态,Change layer sharing,修改图层分享状态
+保存失败：当前项目未完整加载。,Save failed: project not fully loaded.,保存失败：当前项目未完整加载。
+已保存项目、布局和全部已加载场景。,Project/layout/all loaded scenes saved.,已保存项目、布局和全部已加载场景。
+当前场景已保存。,Active scene saved.,当前场景已保存。
+当前场景保存失败。,Failed to save active scene.,当前场景保存失败。
+AI 生成控制器不可用。,AI generation controller unavailable.,AI 生成控制器不可用。
+生成,Generate,生成
+准备中…,Preparing…,准备中…
+具体模型名,Model name,具体模型名
+描述要生成的图片,Describe the image to generate,描述要生成的图片
+取消,Cancel,取消
+排队中,Queued,排队中
+生成中,Generating,生成中
+生成完成，待应用,Generated; pending application,生成完成，待应用
+生成失败,Generation failed,生成失败
+已取消,Canceled,已取消
+已应用，待保存,Applied; pending save,已应用，待保存
+状态已更新,Status updated,状态已更新
+连接,Connection,连接
+模型,Model,模型
+具体模型,Model name,具体模型
+参考选中图片，新增完整 Q,Use selected image; add full Q,参考选中图片，新增完整 Q
+新增完整 Q 到当前图层,Add full Q to active layer,新增完整 Q 到当前图层
+生成方式,Generation mode,生成方式
+Q 是发送和完整写回范围；W 只用于在发送前从 Q 中挖出透明洞。结果始终作为完整 Q 非破坏性新增到当前图层，不会删除底层旧图。最多可同时生成 5 个任务，单次请求最多等待 8 分钟。,Q is the full input/output region; W cuts a transparent hole before sending. Full Q results are added non-destructively to the active layer. Up to 5 concurrent tasks; 8-minute request timeout.,Q 是发送和完整写回范围；W 只用于在发送前从 Q 中挖出透明洞。结果始终作为完整 Q 非破坏性新增到当前图层，不会删除底层旧图。最多可同时生成 5 个任务，单次请求最多等待 8 分钟。
+当前项目、场景、图层或 AI 连接不可用。,Project/scene/layer/AI connection unavailable.,当前项目、场景、图层或 AI 连接不可用。
+当前图层隐藏或锁定，无法应用生成结果。,Active layer is hidden or locked; cannot apply result.,当前图层隐藏或锁定，无法应用生成结果。
+选中图片参考模式要求先在画布中选择图片。,Select an image on the canvas to use selected-image reference mode.,选中图片参考模式要求先在画布中选择图片。
+区域生成准备器不可用，未发送普通整图生成请求。,Region preparation unavailable; no fallback whole-image request sent.,区域生成准备器不可用，未发送普通整图生成请求。
+无法准备区域生成请求。,Cannot prepare region generation request.,无法准备区域生成请求。
+生成结果没有可用的画布接收方。,No canvas available to receive the result.,生成结果没有可用的画布接收方。
+自动应用生成结果失败，画布未修改。,Failed to auto-apply result; canvas unchanged.,自动应用生成结果失败，画布未修改。
+已取消准备中的生成任务。,Generation preparation canceled.,已取消准备中的生成任务。
+域名解析失败,DNS lookup failed,域名解析失败
+连接失败,Connection failed,连接失败
+TLS/协议连接失败,TLS/protocol connection failed,TLS/协议连接失败
+代理连接失败,Proxy connection failed,代理连接失败
+响应提前中断,Response interrupted,响应提前中断
+HTTP 协议错误,HTTP protocol error,HTTP 协议错误
+服务响应无效,Invalid service response,服务响应无效
+服务拒绝请求,Service rejected request,服务拒绝请求
+请求超时,Request timed out,请求超时
+本地保存失败,Local save failed,本地保存失败
+请求状态无效,Invalid request state,请求状态无效
+客户端请求失败,Client request failed,客户端请求失败
+AI 准备中…,AI preparing…,AI 准备中…
+正在准备画布参考图…,Preparing canvas reference…,正在准备画布参考图…
+切回原场景后自动写入失败，画布未修改。,Auto-apply failed on return to the original scene; canvas unchanged.,切回原场景后自动写入失败，画布未修改。
+当前活动图层,Active layer,当前活动图层
+仅其他可见图层,Other visible layers only,仅其他可见图层
+所有可见图层,All visible layers,所有可见图层
+    未设置 W，完整 Q 作为生成输入和写回范围,    W not set; full Q is the input/output region,    未设置 W，完整 Q 作为生成输入和写回范围
+取消全部,Cancel all,取消全部
+自定义模型名,Custom model name,自定义模型名
+尺寸为提示要求，返回尺寸由渠道决定。,Size is a prompt request; the provider determines output size.,尺寸为提示要求，返回尺寸由渠道决定。
+请先在设置中添加 AI 连接。,Add an AI connection in Settings first.,请先在设置中添加 AI 连接。
+AI 连接配置加载失败。,Failed to load AI connection settings.,AI 连接配置加载失败。
+当前 AI 选择未能写入本地配置。,Failed to save current AI selection locally.,当前 AI 选择未能写入本地配置。
+AI 连接配置读取失败。,Failed to read AI connection settings.,AI 连接配置读取失败。
+当前 AI 连接不可用。,Active AI connection unavailable.,当前 AI 连接不可用。
+当前生图模型不可用。,Active image model unavailable.,当前生图模型不可用。
+AI 连接凭据读取失败。,Failed to read AI connection credentials.,AI 连接凭据读取失败。
+所选连接尚未配置 API Key。,Selected connection has no API Key.,所选连接尚未配置 API Key。
+所选连接配置无效。,Selected connection settings are invalid.,所选连接配置无效。
+统一 New API,Unified New API,统一 New API
+模型使用当前启用连接的 Base URL 和 API Key。,Models use the active connection's Base URL and API Key.,模型使用当前启用连接的 Base URL 和 API Key。
+当前模型选择未能写入本地配置。,Failed to save current model selection locally.,当前模型选择未能写入本地配置。
+当前模型不支持质量档位；请切换到 Grok Imagine Image 2.0。,This model does not support quality levels; switch to Grok Imagine Image 2.0.,当前模型不支持质量档位；请切换到 Grok Imagine Image 2.0。
+当前模型不支持完整 Q 区域生图。,This model does not support full Q region generation.,当前模型不支持完整 Q 区域生图。
+当前模型不支持局部区域编辑（W）。请清除 W 后生成完整 Q 区域，或切换到支持局部编辑的模型。,This model does not support W region editing. Clear W to generate full Q or switch to a model with region editing.,当前模型不支持局部区域编辑（W）。请清除 W 后生成完整 Q 区域，或切换到支持局部编辑的模型。
+保存失败：当前场景为空。,Save failed: active scene is empty.,保存失败：当前场景为空。
+项目版本不受支持。,Unsupported project version.,项目版本不受支持。
+保存场景失败。,Failed to save scene.,保存场景失败。
+保存 project.tres 失败。,Failed to save project.tres.,保存 project.tres 失败。
+保存 workspace-layout.tres 失败。,Failed to save workspace-layout.tres.,保存 workspace-layout.tres 失败。
+处理 UI 待删除场景失败。,Failed to process scenes pending deletion from UI.,处理 UI 待删除场景失败。
+处理 MCP 待删除场景失败。,Failed to process scenes pending deletion from MCP.,处理 MCP 待删除场景失败。
+已把其他可见图层合并到当前图层。,Other visible layers merged into the active layer.,已把其他可见图层合并到当前图层。
+修改网格大小,Change grid size,修改网格大小
+修改吸附设置,Change snapping,修改吸附设置
+修改网格显示,Change grid visibility,修改网格显示
+添加图片,Add image,添加图片
+删除图片,Delete image,删除图片
+粘贴图片,Paste image,粘贴图片
+移动图片,Move image,移动图片
+替换图片,Replace image,替换图片
+修改提示词,Edit prompt,修改提示词
+修改提示词分类,Change prompt category,修改提示词分类
+Endpoint,Endpoint,端点
+LastError,Last error,最近错误
+API Key,API Key,API 密钥
+MCP...,MCP...,MCP...
+X,X,X
+Y,Y,Y
+切换到图层：{0}。右键打开该图层提示词并设为当前图层。,Switch to layer: {0}. Right-click to open its prompts and activate it.,切换到图层：{0}。右键打开该图层提示词并设为当前图层。
+切换到图层：{0},Switch to layer: {0},切换到图层：{0}
+隐藏图层：{0},Hide layer: {0},隐藏图层：{0}
+显示图层：{0},Show layer: {0},显示图层：{0}
+解锁图层：{0},Unlock layer: {0},解锁图层：{0}
+锁定图层：{0},Lock layer: {0},锁定图层：{0}
+取消分享图层：{0}。导出场景包时不再带上该层图片。,Stop sharing layer: {0}. Exclude its images from scene packages.,取消分享图层：{0}。导出场景包时不再带上该层图片。
+分享图层：{0}。导出场景包时把该层成图作为参考图带给对方。,Share layer: {0}. Include its composite as a reference in scene packages.,分享图层：{0}。导出场景包时把该层成图作为参考图带给对方。
+重命名图层：{0},Rename layer: {0},重命名图层：{0}
+删除图层：{0}；至少保留 1 个图层,Delete layer: {0}; keep at least one layer,删除图层：{0}；至少保留 1 个图层
+上移图层：{0},Move layer up: {0},上移图层：{0}
+下移图层：{0},Move layer down: {0},下移图层：{0}
+打开图层提示词：{0},Open layer prompts: {0},打开图层提示词：{0}
+删除“{0}”？此操作无法撤销。,Delete “{0}”? This cannot be undone.,删除“{0}”？此操作无法撤销。
+读取工具失败：{0},Failed to read tools: {0},读取工具失败：{0}
+创建失败：{0},Creation failed: {0},创建失败：{0}
+工具链 · {0} 步,Tool chain · {0} steps,工具链 · {0} 步
+加载工具失败：{0},Failed to load tools: {0},加载工具失败：{0}
+保存失败：{0},Save failed: {0},保存失败：{0}
+删除失败：{0},Deletion failed: {0},删除失败：{0}
+"# {0}
+# {1}
+# 输入：Image
+# 输出：Image
+# 此工具没有可编辑的 GDScript 源码。","# {0}
+# {1}
+# Input: Image
+# Output: Image
+# This tool has no editable GDScript source.","# {0}
+# {1}
+# 输入：Image
+# 输出：Image
+# 此工具没有可编辑的 GDScript 源码。"
+AGAS 场景包,AGAS scene package,AGAS 场景包
+旧版场景包清单,Legacy scene package manifest,旧版场景包清单
+项目目录无效：{0},Invalid project folder: {0},项目目录无效：{0}
+打开项目失败：{0},Failed to open project: {0},打开项目失败：{0}
+无法加载 AGAS 项目文件：{0},Cannot load AGAS project file: {0},无法加载 AGAS 项目文件：{0}
+无法打开活动场景：{0},Cannot open active scene: {0},无法打开活动场景：{0}
+无法加载项目的活动场景：{0},Cannot load active scene: {0},无法加载项目的活动场景：{0}
+项目以只读模式打开：{0},Project opened read-only: {0},项目以只读模式打开：{0}
+图片：{0},Image: {0},图片：{0}
+图层：{0} · Q 发送/写回：{1} · W 透明洞：{2},Layer: {0} · Q input/output: {1} · W cutout: {2},图层：{0} · Q 发送/写回：{1} · W 透明洞：{2}
+生图模型已切换为 {0}；进行中的任务不受影响。,Image model switched to {0}; active tasks are unaffected.,生图模型已切换为 {0}；进行中的任务不受影响。
+Grok Imagine Image 2.0 质量已切换为 {0}；进行中的任务不受影响。,Grok Imagine Image 2.0 quality switched to {0}; active tasks are unaffected.,Grok Imagine Image 2.0 质量已切换为 {0}；进行中的任务不受影响。
+"当前生图模型：{0}
+选择生图模型","Active image model: {0}
+Select image model","当前生图模型：{0}
+选择生图模型"
+当前生图模型：{0},Active image model: {0},当前生图模型：{0}
+工具列表读取失败：{0},Failed to read tool list: {0},工具列表读取失败：{0}
+工具执行失败（{0}）：{1},Tool failed ({0}): {1},工具执行失败（{0}）：{1}
+工具执行失败：{0},Tool failed: {0},工具执行失败：{0}
+当前图层“{0}”已隐藏且已锁定，请点击图层旁的眼睛图标将它显示，并点击锁图标解锁后再生成；未发送生图请求。,Layer “{0}” is hidden and locked. Use the eye and lock icons to show and unlock it; no generation request sent.,当前图层“{0}”已隐藏且已锁定，请点击图层旁的眼睛图标将它显示，并点击锁图标解锁后再生成；未发送生图请求。
+当前图层“{0}”已隐藏，请点击图层旁的眼睛图标将它显示后再生成；未发送生图请求。,Layer “{0}” is hidden. Use the eye icon to show it; no generation request sent.,当前图层“{0}”已隐藏，请点击图层旁的眼睛图标将它显示后再生成；未发送生图请求。
+当前图层“{0}”已锁定，请点击图层旁的锁图标解锁后再生成；未发送生图请求。,Layer “{0}” is locked. Use the lock icon to unlock it; no generation request sent.,当前图层“{0}”已锁定，请点击图层旁的锁图标解锁后再生成；未发送生图请求。
+任务 {0}/{1},Tasks {0}/{1},任务 {0}/{1}
+任务 {0}/0,Tasks {0}/0,任务 {0}/0
+更新场景说明失败：{0},Failed to update scene notes: {0},更新场景说明失败：{0}
+"已导出为单个 ZIP 场景包。
+
+文件：{0}
+内容：共享图层 + 提示词 + 共享图层图片 + 工具和工具链（含自定义代码）
+
+导入时：场景列表右键 → 导入场景包… → 选择该 ZIP，程序会自动解压。","Exported as a single ZIP scene package.
+
+File: {0}
+Includes: shared layers + prompts + shared layer images + tools and tool chains (with custom code)
+
+To import: right-click the scene list → Import scene package… → select this ZIP. It will be extracted automatically.","已导出为单个 ZIP 场景包。
+
+文件：{0}
+内容：共享图层 + 提示词 + 共享图层图片 + 工具和工具链（含自定义代码）
+
+导入时：场景列表右键 → 导入场景包… → 选择该 ZIP，程序会自动解压。"
+无法打开文件夹：{0},Cannot open folder: {0},无法打开文件夹：{0}
+项目为只读状态（{0}），不能{1}。,Project is read-only ({0}); cannot {1}.,项目为只读状态（{0}），不能{1}。
+未保存 - {0},Unsaved - {0},未保存 - {0}
+已通过 MCP 导入场景：{0},Scene imported via MCP: {0},已通过 MCP 导入场景：{0}
+图片无法读取：{0},Cannot read image: {0},图片无法读取：{0}
+图片预览失败：{0},Image preview failed: {0},图片预览失败：{0}
+目录无效：{0},Invalid folder: {0},目录无效：{0}
+目录不存在，已移除历史记录：{0},Folder missing; removed from history: {0},目录不存在，已移除历史记录：{0}
+界面语言,Interface language,界面语言
+AI 连接 {0},AI connection {0},AI 连接 {0}
+已启用连接：{0},Connection activated: {0},已启用连接：{0}
+已保存：{0},Saved: {0},已保存：{0}
+当前字体大小：{0}px,Current font size: {0}px,当前字体大小：{0}px
+已应用并保存：{0}px,Applied and saved: {0}px,已应用并保存：{0}px
+语言已应用并保存。,Language applied and saved.,语言已应用并保存。
+保存语言设置失败，已保留原语言。,Failed to save language settings; original language retained.,保存语言设置失败，已保留原语言。
+{0}  当前,{0}  Active,{0}  当前
+加载当前场景失败：{0},Failed to load active scene: {0},加载当前场景失败：{0}
+新增场景失败：{0},Failed to add scene: {0},新增场景失败：{0}
+已新增场景：{0},Scene added: {0},已新增场景：{0}
+重命名场景失败：{0},Failed to rename scene: {0},重命名场景失败：{0}
+已重命名场景：{0},Scene renamed: {0},已重命名场景：{0}
+删除场景失败：{0},Failed to delete scene: {0},删除场景失败：{0}
+已删除场景：{0},Scene deleted: {0},已删除场景：{0}
+单个 ZIP 场景包已导出到 {0},ZIP scene package exported to {0},单个 ZIP 场景包已导出到 {0}
+已从 ZIP 场景包导入场景：{0},Scene imported from ZIP package: {0},已从 ZIP 场景包导入场景：{0}
+已从旧版 scene.json 场景包导入场景：{0},Scene imported from legacy scene.json package: {0},已从旧版 scene.json 场景包导入场景：{0}
+已从 ZIP 场景包导入场景：{0}（图片 {1} 张）,Scene imported from ZIP package: {0} ({1} images),已从 ZIP 场景包导入场景：{0}（图片 {1} 张）
+已从旧版 scene.json 场景包导入场景：{0}（图片 {1} 张）,Scene imported from legacy scene.json package: {0} ({1} images),已从旧版 scene.json 场景包导入场景：{0}（图片 {1} 张）
+只读浏览场景：{0},Viewing scene read-only: {0},只读浏览场景：{0}
+切换场景失败：{0},Failed to switch scene: {0},切换场景失败：{0}
+已切换场景：{0},Scene switched: {0},已切换场景：{0}
+加载场景失败：{0},Failed to load scene: {0},加载场景失败：{0}
+恢复{0}面板,Restore {0} panel,恢复{0}面板
+最小化{0}面板,Minimize {0} panel,最小化{0}面板
+删除场景文件失败：{0},Failed to delete scene file: {0},删除场景文件失败：{0}
+切换到{0}工具,Switch to {0} tool,切换到{0}工具
+选中图片：{0},Selected image: {0},选中图片：{0}
+切换当前图层失败：{0},Failed to switch active layer: {0},切换当前图层失败：{0}
+当前图层：{0},Active layer: {0},当前图层：{0}
+{0}失败：{1},{0} failed: {1},{0}失败：{1}
+保存失败：项目为只读状态（{0}）。,Save failed: project is read-only ({0}).,保存失败：项目为只读状态（{0}）。
+部分保存/待重试：{0},Partially saved/retry pending: {0},部分保存/待重试：{0}
+保存失败/待重试：{0},Save failed/retry pending: {0},保存失败/待重试：{0}
+保存 MCP 设置失败：{0},Failed to save MCP settings: {0},保存 MCP 设置失败：{0}
+{0} 当前未发送请求。,{0} No request sent.,{0} 当前未发送请求。
+最多同时生成 {0} 个任务。,Up to {0} concurrent generation tasks.,最多同时生成 {0} 个任务。
+任务 #{0} 已开始生成（当前 {1}/{2}）。,Task #{0} started ({1}/{2} active).,任务 #{0} 已开始生成（当前 {1}/{2}）。
+任务 #{0} 已生成，切回原场景后自动写入。,Task #{0} generated; return to the original scene to auto-apply.,任务 #{0} 已生成，切回原场景后自动写入。
+AI #{0} 已应用：自动保存失败,AI #{0} applied: autosave failed,AI #{0} 已应用：自动保存失败
+AI #{0} 失败：自动应用失败,AI #{0} failed: auto-apply failed,AI #{0} 失败：自动应用失败
+任务 #{0} 已自动应用：{1},Task #{0} auto-applied: {1},任务 #{0} 已自动应用：{1}
+任务 #{0} 已自动应用，但自动保存失败：{1},Task #{0} auto-applied but autosave failed: {1},任务 #{0} 已自动应用，但自动保存失败：{1}
+任务 #{0} 自动应用失败：{1},Task #{0} auto-apply failed: {1},任务 #{0} 自动应用失败：{1}
+AI #{0} 已取消,AI #{0} canceled,AI #{0} 已取消
+任务 #{0} 已取消。,Task #{0} canceled.,任务 #{0} 已取消。
+AI #{0} 失败：{1},AI #{0} failed: {1},AI #{0} 失败：{1}
+任务 #{0} 生成失败：{1},Task #{0} generation failed: {1},任务 #{0} 生成失败：{1}
+已取消 {0} 个生成任务。,Canceled {0} generation tasks.,已取消 {0} 个生成任务。
+阶段：{0},Phase: {0},阶段：{0}
+类别：{0},Category: {0},类别：{0}
+错误码：{0},Error code: {0},错误码：{0}
+上游代码：{0},Upstream code: {0},上游代码：{0}
+主机：{0},Host: {0},主机：{0}
+诊断ID：{0},Diagnostic ID: {0},诊断ID：{0}
+AI #{0} 已生成，切回原场景后写入,AI #{0} generated; return to the original scene to apply,AI #{0} 已生成，切回原场景后写入
+AI #{0} 生成中 {1},AI #{0} generating {1},AI #{0} 生成中 {1}
+    进行中 {0}/{1},    Active {0}/{1},    进行中 {0}/{1}
+参考范围：{0}    Q 发送/写回：{1}    W 透明挖空区：{2}{3}{4}{5},Reference: {0}    Q input/output: {1}    W cutout: {2}{3}{4}{5},参考范围：{0}    Q 发送/写回：{1}    W 透明挖空区：{2}{3}{4}{5}
+取消全部 ({0}),Cancel all ({0}),取消全部 ({0})
+已满 ({0}/{1}),Full ({0}/{1}),已满 ({0}/{1})
+生成 ({0}/{1}),Generate ({0}/{1}),生成 ({0}/{1})
+"({0},{1}) {2}×{3} 格","({0},{1}) {2}×{3} cells","({0},{1}) {2}×{3} 格"
+旧凭据未能导入，原文件已保留。请为需要的旧连接重新填写 API Key。,Legacy credentials could not be imported; original file retained. Re-enter API Keys for any legacy connections you need.,旧凭据未能导入，原文件已保留。请为需要的旧连接重新填写 API Key。
+生成候选路径无效。,Invalid generated candidate path.,生成候选路径无效。
+生成候选为空。,Generated candidate is empty.,生成候选为空。
+生成候选无法读取。,Cannot read generated candidate.,生成候选无法读取。
+区域合成结果不是有效 PNG。,Region composite is not a valid PNG.,区域合成结果不是有效 PNG。
+生成目录无法创建。,Cannot create generation folder.,生成目录无法创建。
+区域合成结果无法保存。,Cannot save region composite.,区域合成结果无法保存。
+项目为只读状态（{0}）。,Project is read-only ({0}).,项目为只读状态（{0}）。
+项目为只读状态（{0}），不能应用或保存生成结果。,Project is read-only ({0}); cannot apply or save generation results.,项目为只读状态（{0}），不能应用或保存生成结果。
+支持自定义模型名。推荐默认：{0},Custom model names supported. Recommended: {0},支持自定义模型名。推荐默认：{0}
+输入新的 {0} 以覆盖；留空保持不变,Enter a new {0} to replace; leave blank to keep,输入新的 {0} 以覆盖；留空保持不变
+输入 {0},Enter {0},输入 {0}
+未保存 {0}。,No {0} saved.,未保存 {0}。
+清除 {0},Clear {0},清除 {0}
+确认清除所选连接已保存的 {0}？,Clear the selected connection's saved {0}?,确认清除所选连接已保存的 {0}？
+已选择模型：{0},Model selected: {0},已选择模型：{0}
+拖放图片,Drop image,拖放图片
+没有打开的场景。,No scene open.,没有打开的场景。
+当前没有可写入的图层。,No writable layer available.,当前没有可写入的图层。
+只能把可见图层合并到当前活动图层。,Visible layers can only be merged into the active layer.,只能把可见图层合并到当前活动图层。
+当前图层隐藏或锁定，无法写入合并结果。,Active layer is hidden or locked; cannot apply merge result.,当前图层隐藏或锁定，无法写入合并结果。
+没有其他可见图层可合并。,No other visible layers to merge.,没有其他可见图层可合并。
+其他可见图层无法合成。,Cannot composite other visible layers.,其他可见图层无法合成。
+合并结果无法写入当前图层。,Cannot apply merge result to the active layer.,合并结果无法写入当前图层。
+其他可见图层没有可合并的图片。,No images to merge in other visible layers.,其他可见图层没有可合并的图片。
+图片缺失,Missing image,图片缺失
+准备请求,Prepare request,准备请求
+发送服务请求,Send service request,发送服务请求
+读取服务响应,Read service response,读取服务响应
+下载生成图片,Download generated image,下载生成图片
+保存生成结果,Save generation result,保存生成结果
+运行生成任务,Run generation task,运行生成任务
+生成任务,Generation task,生成任务
+TLS 安全连接失败,TLS connection failed,TLS 安全连接失败
+本地读写失败,Local I/O failed,本地读写失败
+请求已取消,Request canceled,请求已取消
+未知客户端错误,Unknown client error,未知客户端错误
+Disabled,Disabled,已禁用
+Starting,Starting,启动中
+Running,Running,运行中
+Stopping,Stopping,停止中
+Stopped,Stopped,已停止
+Error,Error,错误
+AI Provider,AI Provider,AI 服务商
+HTTP：{0},HTTP: {0},HTTP：{0}
+：{0},: {0},：{0}
+MCP AI {0}… {1}{2},MCP AI {0}… {1}{2},MCP AI {0}… {1}{2}
+场景已导出。,Scene exported.,场景已导出。
+场景已导入。,Scene imported.,场景已导入。
+项目目录不存在。,Project folder does not exist.,项目目录不存在。
+导入场景的图片目录已存在。,Imported scene image folder already exists.,导入场景的图片目录已存在。
+导入场景的文件路径不安全。,Imported scene file path is unsafe.,导入场景的文件路径不安全。
+导入场景的文件已存在。,Imported scene file already exists.,导入场景的文件已存在。
+无法保存导入场景。,Cannot save imported scene.,无法保存导入场景。
+场景包内容超过总大小限制。,Scene package exceeds the total size limit.,场景包内容超过总大小限制。
+导入图片的目录路径不安全。,Imported image folder path is unsafe.,导入图片的目录路径不安全。
+导入结果没有图层。,Imported scene has no layers.,导入结果没有图层。
+包内目标路径越界。,Package target path is outside its allowed folder.,包内目标路径越界。
+无法解析场景包目录。,Cannot resolve scene package folder.,无法解析场景包目录。
+请选择 ZIP 场景包、scene.json 或包含 scene.json 的导出目录。,Select a ZIP scene package or scene.json or an export folder containing scene.json.,请选择 ZIP 场景包、scene.json 或包含 scene.json 的导出目录。
+场景包 scene.json 为空。,Scene package scene.json is empty.,场景包 scene.json 为空。
+场景包 scene.json 超过大小限制。,Scene package scene.json exceeds the size limit.,场景包 scene.json 超过大小限制。
+AI 中转站配置文件无效。,Invalid AI gateway settings file.,AI 中转站配置文件无效。
+凭据不能为空。,Credentials cannot be empty.,凭据不能为空。
+AI 中转站不存在。,AI gateway does not exist.,AI 中转站不存在。
+AI 中转站保存失败，原配置已恢复。,Failed to save AI gateway; original settings restored.,AI 中转站保存失败，原配置已恢复。
+AI 中转站保存失败，且原配置恢复失败。,Failed to save AI gateway and restore original settings.,AI 中转站保存失败，且原配置恢复失败。
+待删除的 AI 中转站仍存在于配置中。,The AI gateway pending deletion is still present in settings.,待删除的 AI 中转站仍存在于配置中。
+AI 中转站删除失败，原配置已恢复。,Failed to delete AI gateway; original settings restored.,AI 中转站删除失败，原配置已恢复。
+AI 中转站删除失败，且原配置恢复失败。,Failed to delete AI gateway and restore original settings.,AI 中转站删除失败，且原配置恢复失败。
+设置目录无效。,Invalid settings folder.,设置目录无效。
+AI 中转站配置保存失败。,Failed to save AI gateway settings.,AI 中转站配置保存失败。
+不支持的 AI 中转站配置版本。,Unsupported AI gateway settings version.,不支持的 AI 中转站配置版本。
+AI 中转站 ID 重复。,Duplicate AI gateway ID.,AI 中转站 ID 重复。
+当前 AI 中转站不存在。,Active AI gateway does not exist.,当前 AI 中转站不存在。
+AI 模型名必须为 1-200 个字符且不能包含控制字符。,AI model name must be 1–200 characters with no control characters.,AI 模型名必须为 1-200 个字符且不能包含控制字符。
+AI Provider ID 无效。,Invalid AI provider ID.,AI Provider ID 无效。
+AI Base URL 必须是无用户信息、查询参数和片段的安全 HTTP(S) 绝对地址。,AI Base URL must be a safe absolute HTTP(S) URL without credentials/query/fragment.,AI Base URL 必须是无用户信息、查询参数和片段的安全 HTTP(S) 绝对地址。
+AI Base URL 必须使用 HTTPS；仅 loopback 地址允许 HTTP。,AI Base URL must use HTTPS; HTTP is allowed only for loopback addresses.,AI Base URL 必须使用 HTTPS；仅 loopback 地址允许 HTTP。
+AI API Key 无效。,Invalid AI API Key.,AI API Key 无效。
+AI 中转站 ID 无效。,Invalid AI gateway ID.,AI 中转站 ID 无效。
+AI 中转站 ID 已存在。,AI gateway ID already exists.,AI 中转站 ID 已存在。
+Nano Banana 模型名不能为空。,Nano Banana model name cannot be empty.,Nano Banana 模型名不能为空。
+OK,OK,确定
+Cancel,Cancel,取消
+Open,Open,打开
+Save,Save,保存
+Delete,Delete,删除
+Refresh,Refresh,刷新
+Select Current Folder,Select Current Folder,选择当前文件夹
+Select This Folder,Select This Folder,选择此文件夹
+Copy Path,Copy Path,复制路径
+New Folder...,New Folder...,新建文件夹...
+Open in File Manager,Open in File Manager,在文件管理器中打开
+Show in File Manager,Show in File Manager,在文件管理器中显示
+Show Package Contents,Show Package Contents,显示包内容
+All Recognized,All Recognized,所有支持的文件
+All Files,All Files,所有文件
+Network,Network,网络
+Open a File,Open a File,打开文件
+Open File(s),Open File(s),打开文件
+Open a Directory,Open a Directory,打开目录
+Open a File or Directory,Open a File or Directory,打开文件或目录
+Save a File,Save a File,保存文件
+Go to previous folder.,Go to previous folder.,返回上一个文件夹。
+Go to next folder.,Go to next folder.,前往下一个文件夹。
+Go to parent folder.,Go to parent folder.,前往上级文件夹。
+Path:,Path:,路径：
+Drive,Drive,驱动器
+Refresh files.,Refresh files.,刷新文件。
+(Un)favorite current folder.,(Un)favorite current folder.,收藏或取消收藏当前文件夹。
+Create a new folder.,Create a new folder.,创建新文件夹。
+Favorites:,Favorites:,收藏夹：
+Recent:,Recent:,最近：
+Directories & Files:,Directories & Files:,目录与文件：
+Toggle the visibility of hidden files.,Toggle the visibility of hidden files.,显示或隐藏隐藏文件。
+View items as a grid of thumbnails.,View items as a grid of thumbnails.,以缩略图网格显示。
+View items as a list.,View items as a list.,以列表显示。
+Toggle the visibility of the filter for file names.,Toggle the visibility of the filter for file names.,显示或隐藏文件名筛选栏。
+Sort files,Sort files,文件排序
+Sort by Name (Ascending),Sort by Name (Ascending),按名称升序
+Sort by Name (Descending),Sort by Name (Descending),按名称降序
+Sort by Type (Ascending),Sort by Type (Ascending),按类型升序
+Sort by Type (Descending),Sort by Type (Descending),按类型降序
+Sort by Modified Time (Newest First),Sort by Modified Time (Newest First),按修改时间（最新优先）
+Sort by Modified Time (Oldest First),Sort by Modified Time (Oldest First),按修改时间（最旧优先）
+Filter:,Filter:,筛选：
+Filename Filter:,Filename Filter:,文件名筛选：
+File:,File:,文件：
+Create Folder,Create Folder,创建文件夹
+Name:,Name:,名称：
+Could not create folder.,Could not create folder.,无法创建文件夹。
+"Invalid extension, or empty filename.","Invalid extension, or empty filename.",扩展名无效或文件名为空。
+You don't have permission to access contents of this folder.,You don't have permission to access contents of this folder.,没有访问此文件夹内容的权限。
+"File ""%s"" already exists.
+Do you want to overwrite it?","File ""%s"" already exists.
+Do you want to overwrite it?","文件“%s”已存在。
+是否覆盖？"
+"Delete the selected file?
+Depending on your filesystem configuration, the files will either be moved to the system trash or deleted permanently.","Delete the selected file?
+Depending on your filesystem configuration, the files will either be moved to the system trash or deleted permanently.","删除所选文件？
+根据文件系统配置，文件将被移到系统废纸篓或永久删除。"
+Alert!,Alert!,提示！
+Please Confirm...,Please Confirm...,请确认...
+    ⚠ {0},    ⚠ {0},    ⚠ {0}
+找不到目标图层，无法应用生成结果。,The target layer was not found; generated results cannot be applied.,找不到目标图层，无法应用生成结果。
+目标图层已隐藏，无法应用生成结果。,The target layer is hidden; generated results cannot be applied.,目标图层已隐藏，无法应用生成结果。
+目标图层已锁定，无法应用生成结果。,The target layer is locked; generated results cannot be applied.,目标图层已锁定，无法应用生成结果。
+{0},{0},{0}

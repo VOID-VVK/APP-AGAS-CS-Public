@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "axoncat-newapi",
+  "displayName": "New API",
+  "adapterKind": "newapi-compatible",
+  "defaultBaseUrl": "https://ainewdev.cc",
+  "models": [
+    { "modelName": "gpt-image-2", "label": "GPT Image 2", "recommended": true },
+    { "modelName": "gpt-image-2.5-flare", "label": "GPT Image 2.5 Flare", "recommended": false },
+    { "modelName": "gpt-image-2.5-sunburst", "label": "GPT Image 2.5 Sunburst", "recommended": false },
+    { "modelName": "grok-imagine-image-quality", "label": "Grok Imagine Image Quality", "recommended": false },
+    { "modelName": "grok-imagine-image", "label": "Grok Imagine Image", "recommended": false },
+    { "modelName": "grok-imagine-image-2.0", "label": "Grok Imagine Image 2.0", "recommended": false },
+    { "modelName": "gemini-image", "label": "Gemini Image", "recommended": false }
+  ],
+  "capabilities": ["textToImage", "referenceEdit", "regionEdit"],
+  "credential": { "kind": "profileSettings", "label": "API Key", "settingsKey": "apiKey" },
+  "baseUrlHint": "默认连接 https://ainewdev.cc。填写该服务的生图 Key，即可切换 GPT Image、Grok 与 Gemini；可用模型取决于 Key 的分组权限。",
+  "baseUrlPlaceholder": "https://ainewdev.cc",
+  "order": 6
+}

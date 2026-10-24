@@ -1,0 +1,78 @@
+# Godot generated/import/cache directories
+.godot/
+.import/
+.mono/
+
+# Build outputs / generated binaries
+[Bb]in/
+[Oo]bj/
+TestResults/
+coverage/
+coverage*/
+*.coverage
+*.coveragexml
+
+# Godot export/build artifacts
+exports/**/*.pck
+exports/**/*.zip
+exports/**/*.dmg
+exports/**/*.exe
+exports/**/*.app
+exports/**/*.apk
+exports/**/*.aab
+exports/**/*.ipa
+builds/
+
+# Logs, temp, cache
+*.log
+*.tmp
+*.temp
+*.cache
+.cache/
+cache/
+tmp/
+temp/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Certificates / private keys / secrets
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.csr
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+*.keystore
+*.jks
+secrets.json
+.agas/
+image-generation-profiles.json
+credentials.json
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+desktop.ini

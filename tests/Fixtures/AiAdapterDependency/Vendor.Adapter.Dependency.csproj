@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Vendor.Adapter.Dependency</AssemblyName>
+    <Version>7.3.1</Version>
+    <AssemblyVersion>7.3.1.0</AssemblyVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

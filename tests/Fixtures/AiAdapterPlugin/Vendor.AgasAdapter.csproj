@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Vendor.AgasAdapter</AssemblyName>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../sdk/APP-AGAS-CS.AiAdapter.Contracts/APP-AGAS-CS.AiAdapter.Contracts.csproj" Private="false" />
+    <ProjectReference Include="../AiAdapterDependency/Vendor.Adapter.Dependency.csproj" />
+  </ItemGroup>
+</Project>
