@@ -251,6 +251,17 @@ public partial class AiGenerationPanel : PanelContainer
     {
     }
 
+    public AiGenerationPanel(AgasAiSettingsStore settingsStore, IAiGenerationRunner runner, AgasAiModelDiscovery discovery)
+        : this(settingsStore, runner, new AgasAiGenerationCoordinator(), ownsRunner: false, discovery)
+    {
+    }
+
+    public AiGenerationPanel(AgasAiSettingsStore settingsStore, IAiGenerationRunner runner,
+        IAgasAiGenerationCoordinator coordinator, AgasAiModelDiscovery discovery)
+        : this(settingsStore, runner, coordinator, ownsRunner: false, discovery)
+    {
+    }
+
     public AiGenerationPanel(
         AgasAiSettingsStore settingsStore,
         IAiGenerationRunner runner,
@@ -268,7 +279,8 @@ public partial class AiGenerationPanel : PanelContainer
         AgasAiSettingsStore settingsStore,
         IAiGenerationRunner runner,
         IAgasAiGenerationCoordinator coordinator,
-        bool ownsRunner)
+        bool ownsRunner,
+        AgasAiModelDiscovery? discovery = null)
     {
         ArgumentNullException.ThrowIfNull(settingsStore);
         _runner = runner ?? throw new ArgumentNullException(nameof(runner));
@@ -280,7 +292,8 @@ public partial class AiGenerationPanel : PanelContainer
             _provider,
             _modelPreset,
             _modelName,
-            _modelRecommendation);
+            _modelRecommendation,
+            discovery);
     }
 
     public Func<AiGeneratedImageApplication, AiGeneratedImageApplyResult>? ApplyGeneratedImage { get; set; }
@@ -623,9 +636,9 @@ public partial class AiGenerationPanel : PanelContainer
         profileRow.AddChild(_profile);
         root.AddChild(profileRow);
 
-        Control providerRow = CreateFieldRow("AI Provider", _provider);
+        Control providerRow = CreateFieldRow("模型分类", _provider);
         providerRow.Name = "AiGenerationProviderRow";
-        providerRow.Visible = false;
+        providerRow.Visible = true;
         root.AddChild(providerRow);
         root.AddChild(CreateFieldRow("模型", _modelPreset));
         Control modelNameRow = CreateFieldRow("具体模型", _modelName);

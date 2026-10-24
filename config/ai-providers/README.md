@@ -4,10 +4,12 @@
 `$AGAS_HOME/providers`（默认 `~/.agas/providers`）。之后读取用户目录；升级时只追加新版内置模板，不覆盖用户编辑：
 
 默认连接为 **New API**（`https://ainewdev.cc`）。在设置中给该连接填写一次
-生图 Key，即可在同一条目下切换 `gpt-image-2`、`gpt-image-2.5-flare`、
-`gpt-image-2.5-sunburst`、`grok-imagine-image-quality`、`grok-imagine-image`、
-`grok-imagine-image-2.0` 与 `gemini-image`。GPT/Grok 使用 Images 接口，Gemini 使用
-Chat Completions 图片接口；可用性仍取决于 Key 的分组、渠道及计费配置。
+生图 Key，即可从该连接的 `GET /v1/models` 列表选择图片模型。模型分类包含
+GPT、Gemini、即梦及其他；分类只用于显示，实际使用 Images 或 Chat Completions
+由响应中的 `image_generation.protocol` 决定，可用性取决于当前 Key 的权限和模型能力。
+UI、设置校验、执行与 MCP 共用同一连接快照。网络、超时或 5xx 时优先使用当前
+URL 与 Key 的内存缓存，没有缓存才使用 2026-10-24 的 16 模型回退列表；
+401/403、成功空列表和格式错误会清除旧列表，后续网络故障不会恢复旧权限。
 Gemini 的尺寸通过提示词请求，返回尺寸由渠道决定，不保证精确像素。
 
 首次升级会添加并选中不含 Key 的 New API 连接，原连接和凭据原样保留，旧 Key 不会迁到
@@ -19,7 +21,10 @@ Gemini 的尺寸通过提示词请求，返回尺寸由渠道决定，不保证�
 - 修改名称、模型预设、能力、端点提示或排序：编辑对应 JSON 后在生图面板点击刷新；
   已打开的设置窗口需关闭后重新打开。
 - `id` 是保存到 Profile 的稳定标识，不应随展示名变化。
-- `adapterKind` 指向协议适配器。`newapi-compatible`、`openai-compatible` 与 `gemini-compatible` 已内置。
+- `adapterKind` 指向协议适配器。`newapi-compatible` 为统一入口，按当前连接快照
+  分派至 OpenAI Images 或 OpenAI Chat Completions；`openai-compatible` 仍可供插件使用。
+- 旧 `gemini-compatible` Google 私有协议已停用；不会迁移旧 Key 或自动更换服务地址。
+  旧连接需在设置中显式填写统一 API 地址及对应的新 Key 后保存。
 - 新协议可把实现 `IAiImageGenerationAdapter` 且具有 public 无参构造函数的 DLL 放进
   `$AGAS_HOME/ai-adapters`。DLL 文件和导出类型按名称确定性加载；坏插件会被隔离。
   新增或替换 DLL 后需重启应用；仅修改 Provider JSON 可直接在 UI 刷新。

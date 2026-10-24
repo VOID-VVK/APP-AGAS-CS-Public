@@ -8,14 +8,23 @@
     { "modelName": "gpt-image-2", "label": "GPT Image 2", "recommended": true },
     { "modelName": "gpt-image-2.5-flare", "label": "GPT Image 2.5 Flare", "recommended": false },
     { "modelName": "gpt-image-2.5-sunburst", "label": "GPT Image 2.5 Sunburst", "recommended": false },
-    { "modelName": "grok-imagine-image-quality", "label": "Grok Imagine Image Quality", "recommended": false },
-    { "modelName": "grok-imagine-image", "label": "Grok Imagine Image", "recommended": false },
-    { "modelName": "grok-imagine-image-2.0", "label": "Grok Imagine Image 2.0", "recommended": false },
-    { "modelName": "gemini-image", "label": "Gemini Image", "recommended": false }
+    { "modelName": "gemini-image", "label": "gemini-image", "recommended": false },
+    { "modelName": "jimeng-image-5.0-lite", "label": "jimeng-image-5.0-lite", "recommended": false },
+    { "modelName": "jimeng-image-2.0-pro", "label": "jimeng-image-2.0-pro", "recommended": false },
+    { "modelName": "jimeng-image-3.0", "label": "jimeng-image-3.0", "recommended": false },
+    { "modelName": "jimeng-image-3.1", "label": "jimeng-image-3.1", "recommended": false },
+    { "modelName": "jimeng-image-4.0", "label": "jimeng-image-4.0", "recommended": false },
+    { "modelName": "jimeng-image-4.1", "label": "jimeng-image-4.1", "recommended": false },
+    { "modelName": "jimeng-image-4.5", "label": "jimeng-image-4.5", "recommended": false },
+    { "modelName": "jimeng-image-4.6", "label": "jimeng-image-4.6", "recommended": false },
+    { "modelName": "jimeng-image-4.7", "label": "jimeng-image-4.7", "recommended": false },
+    { "modelName": "jimeng-image-5.0-pro", "label": "jimeng-image-5.0-pro", "recommended": false },
+    { "modelName": "jimeng-image-seedream-5.0-flash", "label": "jimeng-image-seedream-5.0-flash", "recommended": false },
+    { "modelName": "jimeng-image-v8.2", "label": "jimeng-image-v8.2", "recommended": false }
   ],
   "capabilities": ["textToImage", "referenceEdit", "regionEdit"],
   "credential": { "kind": "profileSettings", "label": "API Key", "settingsKey": "apiKey" },
-  "baseUrlHint": "默认连接 https://ainewdev.cc。填写该服务的生图 Key，即可切换 GPT Image、Grok 与 Gemini；可用模型取决于 Key 的分组权限。",
+  "baseUrlHint": "默认连接 https://ainewdev.cc。填写该服务的生图 Key，刷新后可选择 GPT、Gemini 与即梦；实际模型由当前 Key 的 /v1/models 权限和元数据决定。",
   "baseUrlPlaceholder": "https://ainewdev.cc",
   "order": 6
 }

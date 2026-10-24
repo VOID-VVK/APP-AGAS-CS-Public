@@ -8,6 +8,7 @@ using AppAgasCs.Application.Contracts;
 using AppAgasCs.Features.Ai.Generation;
 using AppAgasCs.Features.Ai.Settings;
 using AppAgasCs.Features.Ai.UI;
+using AppAgasCs.Tests.Godot;
 using AppAgasCs.Features.Ai.Workspace;
 using Agas.Features.Canvas;
 using Godot;
@@ -16,12 +17,15 @@ public partial class AiGenerationPanelAcceptance : Node
 {
     private const string Prefix = "[AGAS][AI-GENERATION-PANEL]";
     private string? _tempHome;
+    private string? _previousLocale;
 
     public override async void _Ready()
     {
         int exitCode = 0;
         try
         {
+            _previousLocale = TranslationServer.GetLocale();
+            TranslationServer.SetLocale("zh_CN");
             await RunAll();
             GD.Print($"{Prefix}[PASS]");
         }
@@ -32,6 +36,7 @@ public partial class AiGenerationPanelAcceptance : Node
         }
         finally
         {
+            if (_previousLocale != null) TranslationServer.SetLocale(_previousLocale);
             if (_tempHome != null)
             {
                 try { Directory.Delete(_tempHome, recursive: true); } catch { }
@@ -72,7 +77,7 @@ public partial class AiGenerationPanelAcceptance : Node
         var alternateProfile = new AgasAiProfile(
             "profile-2",
             "备用中转站",
-            AgasAiProviderIds.GeminiCompatible,
+            AgasAiProviderIds.AxonCatNewApi,
             "gemini-3-pro-image-preview",
             "https://alternate.example.test/v1/");
         var thirdPartyProfile = new AgasAiProfile(
@@ -92,7 +97,8 @@ public partial class AiGenerationPanelAcceptance : Node
 
         var runner = new FakeRunner();
         var coordinator = new AgasAiGenerationCoordinator();
-        var panel = new AiGenerationPanel(store, runner, coordinator);
+        using var discovered = new ImageModelsAcceptanceFixture();
+        var panel = new AiGenerationPanel(store, runner, coordinator, discovered.Discovery);
         var applications = new List<AiGeneratedImageApplication>();
         int discarded = 0;
         string latestStatus = string.Empty;
@@ -126,9 +132,8 @@ public partial class AiGenerationPanelAcceptance : Node
             "Every connection must use the global model.");
         Assert.True(panel.SelectProfileById(profile.Id), "The initial built-in profile must remain selectable.");
         OptionButton initialModelPresets = FindRequired<OptionButton>(panel, "AiGenerationModelPreset");
-        Assert.Equal(7, initialModelPresets.ItemCount, "The generation selector must expose exactly seven unified models.");
-        Assert.True(AgasAiUnifiedModelCatalog.Models.All(model => FindPresetIndex(initialModelPresets, model.ModelName) >= 0),
-            "The generation selector must expose GPT, GPT 2.5, Grok, and Gemini models.");
+        Assert.Equal(3, initialModelPresets.ItemCount, "The selected GPT category must show its three discovered models.");
+        Assert.Equal(20, panel.ProfileOptions.Count, "The shared toolbar must expose every available discovered model.");
         AiGenerationProfileResolution explicitPersistedProfile = panel.ResolveProviderProfile(profile.Id);
         Assert.True(explicitPersistedProfile.Success && explicitPersistedProfile.Profile != null,
             "An explicit connection id must resolve independently of the selected connection.");
@@ -340,9 +345,11 @@ public partial class AiGenerationPanelAcceptance : Node
         Assert.Equal(0, RunningCount(overlaySnapshots.Last()),
             "Cancellation must publish zero running overlays while retaining its terminal overlay.");
 
+        applications.Clear();
+        discarded = 0;
         panel.BeginCanvasGeneration(ContextFor(90, "image-9"), "boundary", submit: true, target: AiGenerationTarget.AddToCurrentLayer);
         await WaitUntil(() => panel.ActiveGenerationCount == 1, "Boundary fixture must start a task.");
-        string applySceneId = "scene-1";
+        string applySceneId = "scene-parked";
         panel.ApplyGeneratedImage = application =>
         {
             applications.Add(application);

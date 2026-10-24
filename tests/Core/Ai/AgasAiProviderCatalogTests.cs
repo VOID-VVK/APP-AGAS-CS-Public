@@ -14,7 +14,7 @@ public sealed class AgasAiProviderCatalogTests
         using var home = new TemporaryHome();
         AgasAiProviderCatalog initial = AgasAiProviderCatalog.Load(home.Path);
         Assert.Contains(initial.Providers, provider => provider.Id == AgasAiProviderIds.OpenAiCompatible);
-        Assert.Contains(initial.Providers, provider => provider.Id == AgasAiProviderIds.GeminiCompatible);
+        Assert.DoesNotContain(initial.Providers, provider => provider.Id == AgasAiProviderIds.GeminiCompatible);
 
         WriteProvider(home.Path, "05-third-party.json", ProviderJson(
             "third-party-relay", "Third Party Relay", "openai-compatible", 5));

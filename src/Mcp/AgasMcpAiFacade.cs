@@ -454,10 +454,6 @@ public sealed class AgasMcpAiFacade
     {
         AiGenerationOperation.TextToImage => AiGenerationEffectiveOperation.TextToImage.ToString(),
         AiGenerationOperation.ReferenceEdit => AiGenerationEffectiveOperation.ReferenceEdit.ToString(),
-        AiGenerationOperation.RegionEdit when adapterKind == "newapi-compatible" =>
-            (NewApiImageAdapter.SupportsNativeMask(modelName)
-                ? AiGenerationEffectiveOperation.MaskedEdit
-                : AiGenerationEffectiveOperation.GuidedRegionEdit).ToString(),
         AiGenerationOperation.RegionEdit when capabilities.HasValue
             && capabilities.Value.HasFlag(AiGenerationAdapterCapabilities.NativeAlphaMask) =>
             AiGenerationEffectiveOperation.MaskedEdit.ToString(),

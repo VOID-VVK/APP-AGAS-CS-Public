@@ -80,7 +80,9 @@ public sealed class AgasMcpAiSafeProjectorTests
             store.SaveProfiles(new AgasAiProfilesDocument(3, profile.Id, new[] { profile }));
             store.SetCredential(profile.Id, "super-secret");
             Func<AgasAiProviderCatalog> catalog = () => AgasAiProviderCatalog.LoadFromDirectory(providersPath);
-            var service = new AgasAiProfileSettingsService(store, catalog);
+            using var models = new ImageModelDiscoveryFixture();
+            models.Prime(store);
+            var service = new AgasAiProfileSettingsService(store, catalog, models.Discovery);
 
             AgasAiSafeProfileDescriptor row = Assert.Single(service.ListProfiles());
             AgasAiSafeProviderDescriptor provider = Assert.Single(service.ListProviders());
@@ -93,7 +95,7 @@ public sealed class AgasMcpAiSafeProjectorTests
             Assert.Equal("AxonCat New API", row.ProviderDisplayName);
             Assert.Equal("[redacted]", row.ModelName);
             Assert.Equal("AxonCat New API", provider.DisplayName);
-            Assert.Equal(7, provider.Models.Count);
+            Assert.Equal(20, provider.Models.Count);
             Assert.False(provider.SupportsCustomModel);
             Assert.Empty(row.Capabilities);
             Assert.False(diagnostic.NetworkChecked);

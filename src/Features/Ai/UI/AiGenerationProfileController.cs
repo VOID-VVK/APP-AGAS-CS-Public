@@ -15,7 +15,7 @@ internal readonly record struct AiGenerationProfileReloadResult(string Message, 
 /// Keeps connection selection and model selection independent. Connections own
 /// only an endpoint and credential; the document owns one global model choice.
 /// </summary>
-internal sealed class AiGenerationProfileController
+internal sealed partial class AiGenerationProfileController
 {
     private readonly AgasAiSettingsStore _settingsStore;
     private readonly AgasAiSettingsFieldMergeService _fieldMerge;
@@ -36,9 +36,12 @@ internal sealed class AiGenerationProfileController
         OptionButton provider,
         OptionButton modelPreset,
         LineEdit modelName,
-        Label modelRecommendation)
+        Label modelRecommendation,
+        AgasAiModelDiscovery? discovery = null)
     {
         _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
+        _discovery = discovery ?? AgasAiModelDiscovery.Shared;
+        _models = new AgasAiConnectionModelAccess(_settingsStore, _discovery);
         _fieldMerge = new AgasAiSettingsFieldMergeService(_settingsStore);
         _profile = profile ?? throw new ArgumentNullException(nameof(profile));
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
@@ -47,10 +50,15 @@ internal sealed class AiGenerationProfileController
         _modelRecommendation = modelRecommendation ?? throw new ArgumentNullException(nameof(modelRecommendation));
     }
 
-    internal IReadOnlyList<AiGenerationProfileOption> ProfileOptions => Array.AsReadOnly(
-        AgasAiUnifiedModelCatalog.Models
-            .Select(model => new AiGenerationProfileOption(model.ModelName, model.DisplayName))
-            .ToArray());
+    internal IReadOnlyList<AiGenerationProfileOption> ProfileOptions
+    {
+        get
+        {
+            AgasAiModelSnapshot snapshot = _models.Snapshot(SelectedProfileId);
+            return Array.AsReadOnly(snapshot.Models.Where(model => snapshot.IsReady && model.IsAvailable)
+                .Select(model => new AiGenerationProfileOption(model.ModelName, model.DisplayName)).ToArray());
+        }
+    }
 
     internal string? SelectedProfileId => SelectedProfile()?.Id;
 
@@ -68,6 +76,7 @@ internal sealed class AiGenerationProfileController
         _selectionChanged = selectionChanged;
         _profile.ItemSelected += OnProfileSelected;
         _modelPreset.ItemSelected += OnModelPresetSelected;
+        _provider.ItemSelected += OnCategorySelected;
         _connected = true;
     }
 
@@ -77,6 +86,11 @@ internal sealed class AiGenerationProfileController
 
         _profile.ItemSelected -= OnProfileSelected;
         _modelPreset.ItemSelected -= OnModelPresetSelected;
+        _provider.ItemSelected -= OnCategorySelected;
+        _refreshGeneration++;
+        _refreshCancellation?.Cancel();
+        _refreshCancellation?.Dispose();
+        _refreshCancellation = null;
         _statusChanged = null;
         _selectionChanged = null;
         _connected = false;
@@ -89,20 +103,15 @@ internal sealed class AiGenerationProfileController
             string? selectedId = preferredProfileId ?? SelectedProfile()?.Id;
             AgasAiProviderCatalog providers = AgasAiProviderCatalog.Load(_settingsStore.HomeDirectory);
             _profiles = AgasAiNewApiSetup.EnsureProfile(_settingsStore, providers);
-            if (!AgasAiUnifiedModelCatalog.TryGet(_profiles.ActiveModelName, out AgasAiUnifiedModel? activeModel))
-            {
-                activeModel = AgasAiUnifiedModelCatalog.Models[0];
-                _profiles = _fieldMerge.SetActiveModel(activeModel.ModelName);
-            }
-
             PopulateConnections();
-            PopulateModels(activeModel.ModelName);
 
             string? preferredId = FindProfileIndex(selectedId) >= 0
                 ? selectedId
                 : _profiles.ActiveProfileId ?? _profiles.Profiles.FirstOrDefault()?.Id;
             int index = FindProfileIndex(preferredId);
             if (index >= 0) _profile.Select(index);
+            PopulateCategories(_profiles.ActiveModelName);
+            RefreshModels();
 
             string message = _profiles.Profiles.Count == 0
                 ? "请先在设置中添加 AI 连接。"
@@ -124,12 +133,17 @@ internal sealed class AiGenerationProfileController
         if (index < 0) return false;
 
         _profile.Select(index);
-        return PersistActiveSelection(persistModelFields: false);
+        bool saved = PersistActiveSelection(persistModelFields: false);
+        if (saved) { PopulateCategories(_profiles.ActiveModelName); RefreshModels(); }
+        return saved;
     }
 
     internal bool SelectModelByName(string modelName)
     {
-        if (!AgasAiUnifiedModelCatalog.TryGet(modelName, out AgasAiUnifiedModel? model)) return false;
+        if (!_models.TryGet(modelName, out AgasAiUnifiedModel? model, SelectedProfileId)) return false;
+
+        SelectCategory(model.Category);
+        PopulateModels(model.ModelName);
 
         int index = FindModelIndex(model.ModelName);
         if (index < 0) return false;
@@ -194,7 +208,10 @@ internal sealed class AiGenerationProfileController
             string.Equals(profile.Id, selectedId, StringComparison.Ordinal));
         if (storedProfile == null)
             return AiGenerationProfileResolution.Fail("当前 AI 连接不可用。");
-        if (!AgasAiUnifiedModelCatalog.TryGet(fresh.ActiveModelName, out AgasAiUnifiedModel? model))
+        if (AgasAiConnectionModelResolver.UsesRetiredProtocol(storedProfile,
+            AgasAiProviderCatalog.Load(_settingsStore.HomeDirectory)))
+            return AiGenerationProfileResolution.Fail("旧 Google 私有协议已停用，请在设置中改为统一 API 地址并重新保存连接及 Key。");
+        if (!_models.TryGet(fresh.ActiveModelName, out AgasAiUnifiedModel? model, storedProfile.Id))
             return AiGenerationProfileResolution.Fail("当前生图模型不可用。");
 
         string? credential;
@@ -213,7 +230,11 @@ internal sealed class AiGenerationProfileController
         {
             return AiGenerationProfileResolution.Ok(AgasAiConnectionModelResolver.Resolve(
                 storedProfile with { ApiKey = credential },
-                model.ModelName));
+                model.ModelName, _discovery));
+        }
+        catch (AiGenerationException exception)
+        {
+            return AiGenerationProfileResolution.Fail(exception.Message);
         }
         catch
         {
@@ -233,9 +254,9 @@ internal sealed class AiGenerationProfileController
     {
         int selected = _modelPreset.Selected;
         if (selected < 0 || selected >= _modelPreset.ItemCount) return null;
-        return AgasAiUnifiedModelCatalog.TryGet(
+        return _models.TryGet(
             _modelPreset.GetItemMetadata(selected).AsString(),
-            out AgasAiUnifiedModel? model)
+            out AgasAiUnifiedModel? model, SelectedProfileId)
             ? model
             : null;
     }
@@ -249,39 +270,6 @@ internal sealed class AiGenerationProfileController
             _profile.SetItemMetadata(_profile.ItemCount - 1, profile.Id);
         }
 
-        _provider.Clear();
-        _provider.AddItem("统一 New API");
-        _provider.SetItemMetadata(0, AgasAiUnifiedModelCatalog.ConnectionAdapterKind);
-        _provider.Select(0);
-    }
-
-    private void PopulateModels(string selectedModelName)
-    {
-        _applyingSelection = true;
-        try
-        {
-            _modelPreset.Clear();
-            int selectedIndex = -1;
-            foreach (AgasAiUnifiedModel model in AgasAiUnifiedModelCatalog.Models)
-            {
-                int index = _modelPreset.ItemCount;
-                _modelPreset.AddItem(model.DisplayName);
-                _modelPreset.SetItemMetadata(index, model.ModelName);
-                _modelPreset.SetItemTooltip(index, model.ModelName);
-                if (string.Equals(model.ModelName, selectedModelName, StringComparison.OrdinalIgnoreCase))
-                    selectedIndex = index;
-            }
-            if (selectedIndex >= 0)
-            {
-                _modelPreset.Select(selectedIndex);
-                _modelName.Text = AgasAiUnifiedModelCatalog.Models[selectedIndex].ModelName;
-            }
-            _modelRecommendation.Text = "模型使用当前启用连接的 Base URL 和 API Key。";
-        }
-        finally
-        {
-            _applyingSelection = false;
-        }
     }
 
     private int FindProfileIndex(string? id)
@@ -308,6 +296,8 @@ internal sealed class AiGenerationProfileController
     {
         if (_applyingSelection || index < 0 || index >= _profile.ItemCount) return;
         PersistActiveSelection(persistModelFields: false);
+        PopulateCategories(_profiles.ActiveModelName);
+        RefreshModels();
         _selectionChanged?.Invoke();
     }
 
@@ -331,7 +321,12 @@ internal sealed class AiGenerationProfileController
     {
         try
         {
-            _profiles = _fieldMerge.SetActiveModel(modelName);
+            lock (_settingsStore.SharedGate)
+            {
+                if (_settingsStore.LoadProfiles().ActiveProfileId != SelectedProfileId
+                    || !_models.TryGet(modelName, out _, SelectedProfileId)) return false;
+                _profiles = _fieldMerge.SetActiveModel(modelName);
+            }
             return true;
         }
         catch

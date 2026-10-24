@@ -19,15 +19,24 @@ public sealed class AgasAiProfileSettingsService
     private readonly AgasAiSettingsStore _store;
     private readonly Func<AgasAiProviderCatalog> _providerCatalog;
     private readonly AgasAiSettingsRmwCoordinator _mutations;
+    private readonly AgasAiConnectionModelAccess _models;
+    private readonly AgasAiModelDiscovery _discovery;
 
     public AgasAiProfileSettingsService(
         AgasAiSettingsStore store,
-        Func<AgasAiProviderCatalog>? providerCatalog = null)
+        Func<AgasAiProviderCatalog>? providerCatalog = null,
+        AgasAiModelDiscovery? discovery = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _providerCatalog = providerCatalog ?? (() => AgasAiProviderCatalog.Load(_store.HomeDirectory));
-        _mutations = new AgasAiSettingsRmwCoordinator(_store, _providerCatalog);
+        _discovery = discovery ?? AgasAiModelDiscovery.Shared;
+        _models = new AgasAiConnectionModelAccess(_store, _discovery, _providerCatalog);
+        _mutations = new AgasAiSettingsRmwCoordinator(_store, _providerCatalog, _discovery);
     }
+
+    public System.Threading.Tasks.Task<AgasAiModelSnapshot> RefreshModelsAsync(
+        System.Threading.CancellationToken cancellationToken = default) =>
+        _models.RefreshAsync(cancellationToken: cancellationToken);
 
     public AgasAiSettingsMutationResult ActivateProfile(
         string profileId,
@@ -50,7 +59,7 @@ public sealed class AgasAiProfileSettingsService
     {
         string candidate = modelName ?? string.Empty;
         if (!string.Equals(candidate, candidate.Trim(), StringComparison.Ordinal)
-            || !AgasAiUnifiedModelCatalog.TryGet(candidate, out AgasAiUnifiedModel model))
+            || !_models.TryGet(candidate, out AgasAiUnifiedModel model))
         {
             return AgasAiSettingsMutationResult.Fail(AgasAiSettingsMutationFailure.ModelInvalid);
         }
@@ -127,7 +136,7 @@ public sealed class AgasAiProfileSettingsService
     {
         lock (_store.SharedGate)
         {
-            return AgasAiUnifiedModelCatalog.TryGet(modelName, out _);
+            return _models.TryGet(modelName, out _);
         }
     }
 
@@ -159,11 +168,12 @@ public sealed class AgasAiProfileSettingsService
 
             AiGenerationProviderProfile? execution = ResolveExecution(profile, profiles.ActiveModelName);
             string effectiveModelName = execution?.ModelName ?? CanonicalModelName(profiles.ActiveModelName);
-            bool knownModel = AgasAiUnifiedModelCatalog.TryGet(effectiveModelName, out AgasAiUnifiedModel? model);
+            bool knownModel = _models.TryGet(effectiveModelName, out AgasAiUnifiedModel? model, profile.Id);
             bool credentialConfigured = _store.HasCredential(profile.Id);
             IReadOnlyList<string> credentials = _store.LoadCredentialValuesInsideSharedGate();
             var issues = new List<string>();
             if (!credentialConfigured) issues.Add("CREDENTIAL_MISSING");
+            if (AgasAiConnectionModelResolver.UsesRetiredProtocol(profile, _providerCatalog())) issues.Add("PROTOCOL_RETIRED");
             if (string.IsNullOrWhiteSpace(effectiveModelName)) issues.Add("MODEL_MISSING");
             else if (!knownModel) issues.Add("MODEL_UNSUPPORTED");
             return new AgasAiConfigurationDiagnostic(
@@ -192,9 +202,6 @@ public sealed class AgasAiProfileSettingsService
         IReadOnlyList<string> credentials)
     {
         string modelName = CanonicalModelName(document.ActiveModelName);
-        IReadOnlyList<string> capabilities = AgasAiUnifiedModelCatalog.TryGet(modelName, out AgasAiUnifiedModel model)
-            ? model.Capabilities
-            : Array.Empty<string>();
         return document.Profiles
             .OrderBy(profile => profile.Id, StringComparer.Ordinal)
             .Select(profile => new AgasAiSafeProfileDescriptor(
@@ -205,27 +212,39 @@ public sealed class AgasAiProfileSettingsService
                 AgasMcpAiSafeProjector.SafeText(modelName, credentials),
                 _store.HasCredential(profile.Id),
                 true,
-                OrderCapabilities(capabilities)))
+                OrderCapabilities(_models.TryGet(modelName, out AgasAiUnifiedModel model, profile.Id)
+                    ? model.Capabilities : Array.Empty<string>())))
             .ToArray();
     }
 
-    private static AgasAiSafeProviderDescriptor ProjectUnifiedProvider(
-        IReadOnlyList<string> credentials) => new(
+    private AgasAiSafeProviderDescriptor ProjectUnifiedProvider(
+        IReadOnlyList<string> credentials)
+    {
+        AgasAiModelSnapshot snapshot = _models.Snapshot();
+        AgasAiUnifiedModel[] available = snapshot.IsReady
+            ? snapshot.Models.Where(model => model.IsAvailable).ToArray()
+            : Array.Empty<AgasAiUnifiedModel>();
+        string defaultModel = available.FirstOrDefault(model => string.Equals(
+            model.ModelName, AgasAiModelCatalog.DefaultGptImageModel, StringComparison.Ordinal))?.ModelName
+            ?? available.FirstOrDefault()?.ModelName ?? string.Empty;
+        return new(
         AgasMcpAiSafeProjector.SafeProviderIdentifier(AgasAiProviderIds.AxonCatNewApi, credentials),
         AgasMcpAiSafeProjector.SafeText(UnifiedProviderDisplayName, credentials),
         AgasMcpAiSafeProjector.SafeText(AgasAiUnifiedModelCatalog.ConnectionAdapterKind, credentials),
-        AgasMcpAiSafeProjector.SafeText(AgasAiModelCatalog.DefaultGptImageModel, credentials),
-        OrderCapabilities(UnifiedCapabilities()),
+        AgasMcpAiSafeProjector.SafeText(defaultModel, credentials),
+        OrderCapabilities(available
+            .SelectMany(model => model.Capabilities).Distinct(StringComparer.Ordinal).ToArray()),
         false,
-        AgasAiUnifiedModelCatalog.Models
+        available
             .Select(model => new AgasAiModelPreset(
                 AgasMcpAiSafeProjector.SafeText(model.ModelName, credentials),
                 AgasMcpAiSafeProjector.SafeText(model.DisplayName, credentials),
                 string.Equals(
                     model.ModelName,
-                    AgasAiModelCatalog.DefaultGptImageModel,
+                    defaultModel,
                     StringComparison.Ordinal)))
             .ToArray());
+    }
 
     private AgasAiSafeEffectiveProfileDescriptor? ProjectEffectiveCurrent(
         AgasAiProfilesDocument document,
@@ -260,19 +279,17 @@ public sealed class AgasAiProfileSettingsService
         string activeModelName)
     {
         string? credential = _store.GetCredential(connection.Id);
-        return string.IsNullOrWhiteSpace(credential)
-            ? null
-            : AgasAiConnectionModelResolver.Resolve(connection with { ApiKey = credential }, activeModelName);
+        if (string.IsNullOrWhiteSpace(credential)
+            || AgasAiConnectionModelResolver.UsesRetiredProtocol(connection, _providerCatalog())) return null;
+        try
+        {
+            return AgasAiConnectionModelResolver.Resolve(connection with { ApiKey = credential }, activeModelName, _discovery);
+        }
+        catch (AiGenerationException) { return null; }
     }
 
-    private static string CanonicalModelName(string? modelName) =>
-        AgasAiUnifiedModelCatalog.TryGet(modelName, out AgasAiUnifiedModel model)
+    private string CanonicalModelName(string? modelName) =>
+        _models.TryGet(modelName, out AgasAiUnifiedModel model)
             ? model.ModelName
             : modelName?.Trim() ?? string.Empty;
-
-    private static IReadOnlyList<string> UnifiedCapabilities() =>
-        AgasAiUnifiedModelCatalog.Models
-            .SelectMany(model => model.Capabilities)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
 }

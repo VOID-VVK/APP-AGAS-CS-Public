@@ -20,16 +20,8 @@ public partial class NewApiSingleKeyAcceptance : Node
 {
     private const string Prefix = "[AGAS][NEWAPI-SINGLE-KEY]";
     private const string MockKey = "sk-local-newapi-acceptance-not-a-real-key";
-    private static readonly string[] Models =
-    {
-        "gpt-image-2",
-        "gpt-image-2.5-flare",
-        "gpt-image-2.5-sunburst",
-        "grok-imagine-image-quality",
-        "grok-imagine-image",
-        "grok-imagine-image-2.0",
-        "gemini-image",
-    };
+    private static readonly string[] Models = AgasAiUnifiedModelCatalog.Models.Select(model => model.ModelName)
+        .Concat(new[] { "grok-imagine-image-quality", "grok-imagine-image", "grok-imagine-image-2.0", "future-partner-image" }).ToArray();
 
     public override async void _Ready()
     {
@@ -45,7 +37,7 @@ public partial class NewApiSingleKeyAcceptance : Node
             else
             {
                 await VerifyAsync();
-                GD.Print($"{Prefix}[PASS] settings, single credential, seven models, eleven intercepted requests, three Grok edit rejections, persisted reopen");
+                GD.Print($"{Prefix}[PASS] settings, single credential, twenty discovered models, twenty-four intercepted requests, text-only edit rejections, persisted reopen");
             }
         }
         catch (Exception exception)
@@ -63,7 +55,8 @@ public partial class NewApiSingleKeyAcceptance : Node
         AgasAiProfile saved = document.Profiles.Single();
         Require(saved.ApiKey == MockKey && document.ActiveModelName == Models[^1] && saved.BaseUrl == "http://127.0.0.1:19877",
             "Fresh-process verification requires the prior isolated mock profile.");
-        var panel = new AiGenerationPanel();
+        using var discovered = new ImageModelsAcceptanceFixture();
+        var panel = discovered.Panel(store);
         AddChild(panel);
         await Frame();
         var resolution = panel.ResolveProviderProfile();
@@ -137,7 +130,8 @@ public partial class NewApiSingleKeyAcceptance : Node
             profileId,
             store.LoadProfiles().ActiveModelName,
             new[] { saved }));
-        var panel = new AiGenerationPanel();
+        using var discovered = new ImageModelsAcceptanceFixture();
+        var panel = discovered.Panel(store);
         AddChild(panel);
         await Frame();
         using Image fixture = Image.CreateEmpty(8, 8, false, Image.Format.Rgba8);
@@ -145,13 +139,13 @@ public partial class NewApiSingleKeyAcceptance : Node
         byte[] png = fixture.SavePngToBuffer();
         using var transport = new MockTransport(png);
         using var client = new System.Net.Http.HttpClient(transport);
-        var service = new AiGenerationService(client, imageDownloadClient: client, timeout: TimeSpan.FromSeconds(10));
+        var service = new AiGenerationService(client, discovered.Registry(), imageDownloadClient: client, timeout: TimeSpan.FromSeconds(10));
         string projectRoot = Path.Combine(home, "mock-generated-project");
         Directory.CreateDirectory(projectRoot);
 
         foreach (string model in Models)
         {
-            SelectModel(Required<OptionButton>(panel, "AiGenerationModelPreset"), model);
+            Require(panel.SelectModelByName(model), $"Discovered model must be selectable: {model}");
             AgasAiProfilesDocument switched = store.LoadProfiles();
             Require(switched.ActiveModelName == model && switched.ActiveProfileId == profileId,
                 "Model switching must update only the global model selection.");
@@ -163,30 +157,29 @@ public partial class NewApiSingleKeyAcceptance : Node
             Require(profile.Id == profileId && profile.ApiKey == MockKey && profile.ModelName == model,
                 "Runtime selection must retain one profile/key across all models.");
             Require(profile.AdapterKind == "newapi-compatible", "Runtime selection must retain the unified adapter.");
-            bool isGrok = model.StartsWith("grok-", StringComparison.Ordinal);
             bool supportsReferenceEdit = profile.DeclaredCapabilities?.HasFlag(
                 AiGenerationAdapterCapabilities.ReferenceEdit) == true;
-            Require(supportsReferenceEdit == !isGrok,
+            Require(supportsReferenceEdit == (model.StartsWith("gpt-", StringComparison.Ordinal) || model == "gemini-image"),
                 "Only GPT and Gemini models must declare reference editing support.");
             foreach (bool reference in new[] { false, true })
             {
                 var request = new AiGenerationRequest(projectRoot, "生成一只奶牛猫", referenceImages:
                     reference ? new[] { AiGenerationReferenceImage.Create(png, "image/png") } : null);
-                if (reference && isGrok)
+                if (reference && !supportsReferenceEdit)
                 {
                     int requestCountBeforeRejection = transport.RequestCount;
                     try
                     {
                         await service.GenerateAsync(profile, request);
-                        throw new InvalidOperationException("Grok reference editing must be rejected.");
+                        throw new InvalidOperationException("Text-only model reference editing must be rejected.");
                     }
                     catch (AiGenerationException exception)
                     {
                         Require(exception.Code == AiGenerationErrorCode.UnsupportedOperation,
-                            "Grok reference editing must fail with UnsupportedOperation.");
+                            "Text-only model reference editing must fail with UnsupportedOperation.");
                     }
                     Require(transport.RequestCount == requestCountBeforeRejection,
-                        "Grok reference editing must be rejected before any HTTP request.");
+                        "Text-only model reference editing must be rejected before any HTTP request.");
                     continue;
                 }
 
@@ -198,10 +191,10 @@ public partial class NewApiSingleKeyAcceptance : Node
                     "Operation semantics must survive adapter routing.");
             }
         }
-        Require(transport.RequestCount == 11, "Exactly eleven supported generation requests must be intercepted.");
+        Require(transport.RequestCount == 24, "Exactly twenty-four supported generation requests must be intercepted.");
         panel.QueueFree();
         await Frame();
-        var reopened = new AiGenerationPanel();
+        var reopened = discovered.Panel(store);
         AddChild(reopened);
         await Frame();
         var reopenedProfile = reopened.ResolveProviderProfile();
@@ -265,6 +258,12 @@ public partial class NewApiSingleKeyAcceptance : Node
             {
                 using JsonDocument payload = JsonDocument.Parse(body);
                 Require(payload.RootElement.GetProperty("model").GetString() == _model, "JSON must send the selected model ID unchanged.");
+                if (_model.StartsWith("jimeng-image-", StringComparison.Ordinal))
+                {
+                    Require(payload.RootElement.EnumerateObject().Count() == 3
+                        && payload.RootElement.GetProperty("n").GetInt32() == 1,
+                        "Jimeng must send only verified model/prompt/n fields.");
+                }
                 if (_model == "grok-imagine-image-2.0")
                 {
                     Require(payload.RootElement.GetProperty("quality").GetString() == "medium",

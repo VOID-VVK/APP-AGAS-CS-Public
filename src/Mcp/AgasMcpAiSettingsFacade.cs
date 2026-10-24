@@ -66,6 +66,14 @@ public sealed class AgasMcpAiSettingsFacade
             result.ProviderConfigurationErrorCount));
     }
 
+    public async System.Threading.Tasks.ValueTask<AgasMcpToolResponse> ModelsAsync(
+        AgasAiModelsListInput input, CancellationToken cancellationToken = default)
+    {
+        if (!Validate(input)) return Invalid();
+        await _service.RefreshModelsAsync(cancellationToken).ConfigureAwait(false);
+        return Models(input);
+    }
+
     public AgasMcpToolResponse Activate(
         AgasAiProfileActivateInput input,
         CancellationToken cancellationToken = default)

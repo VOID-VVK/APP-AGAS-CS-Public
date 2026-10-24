@@ -380,9 +380,9 @@ public sealed class NewApiImageAdapterTests
         GeneratedImageData result = await Adapter().GenerateAsync(Profile(model), request, client, client, CancellationToken.None);
         Assert.Equal(nativeMask ? AiGenerationEffectiveOperation.MaskedEdit : AiGenerationEffectiveOperation.GuidedRegionEdit, result.EffectiveOperation);
         Assert.Equal(nativeMask ? AiGenerationEditGuarantee.ProviderMasked : AiGenerationEditGuarantee.GuidedReference, result.EditGuarantee);
-        Assert.Equal(result.EffectiveOperation.ToString(), AgasMcpAiFacade.ResolveEffectiveOperation(request.Operation, "newapi-compatible", AiGenerationAdapterCapabilities.RegionEdit, model));
-        // Even an overbroad custom provider declaration must not advertise a native Gemini mask.
-        Assert.Equal(result.EffectiveOperation.ToString(), AgasMcpAiFacade.ResolveEffectiveOperation(request.Operation, "newapi-compatible", AiGenerationAdapterCapabilities.NativeAlphaMask, model));
+        AiGenerationAdapterCapabilities declared = AiGenerationAdapterCapabilities.RegionEdit
+            | (nativeMask ? AiGenerationAdapterCapabilities.NativeAlphaMask : AiGenerationAdapterCapabilities.GuidedRegionEdit);
+        Assert.Equal(result.EffectiveOperation.ToString(), AgasMcpAiFacade.ResolveEffectiveOperation(request.Operation, "newapi-compatible", declared, model));
     }
 
     [Fact]
@@ -396,7 +396,7 @@ public sealed class NewApiImageAdapterTests
         Assert.DoesNotContain("test-key", error.ToString());
     }
 
-    private static IAiImageGenerationAdapter Adapter() => AiImageGenerationAdapterRegistry.CreateDefault("/tmp/agas-no-adapter-plugins").Resolve("newapi-compatible");
+    private static IAiImageGenerationAdapter Adapter() => new DiscoveredImageAdapter();
     private static AiGenerationProviderProfile Profile(string model, string path = "") => new("newapi", "New API", "axoncat-newapi", "newapi-compatible", model, "test-key", "https://ainewdev.cc" + path);
     private static HttpResponseMessage Chat(string text) => Json(new { choices = new[] { new { message = new { content = text } } } });
     private static HttpResponseMessage Json(object body) => new(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };

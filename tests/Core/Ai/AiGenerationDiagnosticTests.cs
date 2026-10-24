@@ -7,24 +7,21 @@ namespace AppAgasCs.Tests.Core.Ai;
 public sealed class AiGenerationDiagnosticTests
 {
     [Fact]
-    public async Task DeferredJsonSerializationFailure_PreservesJsonStageWithoutSensitiveText()
+    public void JsonSerializationFailure_PreservesJsonStageWithoutSensitiveText()
     {
         using var home = new TemporaryHome();
         const string secret = "DEFERRED_JSON_KEY_SECRET";
         const string sensitiveMessage =
             "Authorization: Bearer DEFERRED_JSON_KEY_SECRET https://relay.example/private DEFERRED_JSON_PROMPT_SECRET";
         var profile = new AiGenerationProviderProfile(
-            "nano-safe",
-            "Nano",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
+            "image-safe",
+            "Images",
+            "openai-compatible",
+            "gpt-image-2",
             secret,
-            "https://relay.example/v1beta");
-        using var content = new GeminiCompatibleImageAdapter.StagedJsonContent(
-            new ThrowingJsonPayload(sensitiveMessage));
-
-        AiGenerationAdapterStageException failure = await Assert.ThrowsAsync<AiGenerationAdapterStageException>(
-            () => content.ReadAsByteArrayAsync());
+            "https://relay.example/v1");
+        var failure = new AiGenerationAdapterStageException(
+            AiGenerationAdapterStage.JsonSerialization, new JsonException(sensitiveMessage));
         AiGenerationSafeDiagnostic diagnostic = AiGenerationDiagnostics.Create(
             AiGenerationErrorCode.ProviderRequestFailed,
             AiGenerationFailurePhase.ProviderRequest,
@@ -247,23 +244,4 @@ public sealed class AiGenerationDiagnosticTests
         }
     }
 
-    private sealed class ThrowingJsonPayload
-    {
-        private readonly string _message;
-
-        public ThrowingJsonPayload(string message)
-        {
-            _message = message;
-        }
-
-        public string Value => throw new SensitiveJsonException(_message);
-    }
-
-    private sealed class SensitiveJsonException : Exception
-    {
-        public SensitiveJsonException(string message)
-            : base(message)
-        {
-        }
-    }
 }

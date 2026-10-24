@@ -75,7 +75,7 @@ public sealed class AgasAiNewApiSetupTests
     }
 
     [Fact]
-    public void SixModelsShareOneCredentialAndModelLookupPrefersCurrentConnection()
+    public void FallbackModelsShareOneCredentialAndModelLookupPrefersCurrentConnection()
     {
         using var home = new TemporaryHome();
         var store = new AgasAiSettingsStore(home.Path);
@@ -95,7 +95,7 @@ public sealed class AgasAiNewApiSetupTests
         Assert.Equal(AgasAiProviderIds.OpenAiCompatible,
             catalog.FindByKnownModel("gpt-image-2", AgasAiProviderIds.OpenAiCompatible)?.Id);
         Assert.Equal(profile.ProviderId,
-            catalog.FindByKnownModel("grok-imagine-image", profile.ProviderId)?.Id);
+            catalog.FindByKnownModel("jimeng-image-5.0-lite", profile.ProviderId)?.Id);
         Assert.Equal(AgasAiProviderIds.OpenAiCompatible,
             catalog.FindByKnownModel("gpt-image-2.5-flare", AgasAiProviderIds.OpenAiCompatible)?.Id);
     }

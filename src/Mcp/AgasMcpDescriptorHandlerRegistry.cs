@@ -126,8 +126,8 @@ internal static class AgasMcpDescriptorHandlerRegistry
             await context.CaptureMainThreadAsync(_ => { refreshEffectiveAiSelection(); return true; }, token).ConfigureAwait(false);
             return await BindValueTask<AgasAiProfilesListInput>(arguments, aiSettings.Profiles).ConfigureAwait(false);
         });
-        Register(registry, AgasMcpToolNames.AiModelsList, (arguments, _, _) =>
-            BindValueTask<AgasAiModelsListInput>(arguments, aiSettings.Models));
+        Register(registry, AgasMcpToolNames.AiModelsList, (arguments, _, token) =>
+            BindAsync<AgasAiModelsListInput>(arguments, input => aiSettings.ModelsAsync(input, token)));
         Register(registry, AgasMcpToolNames.AiProfileActivate, (arguments, context, token) =>
             ExecuteStagedAiMutation<AgasAiProfileActivateInput>(arguments, context, token,
                 input => aiSettings.Activate(input, context.CommitExecution, token),

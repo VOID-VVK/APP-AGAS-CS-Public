@@ -87,6 +87,25 @@ public enum AiGenerationEditGuarantee
     GuidedReference
 }
 
+/// <summary>Immutable provider parameter limits projected from image-model metadata.</summary>
+public sealed record AiGenerationModelConstraints
+{
+    public AiGenerationModelConstraints(IEnumerable<string> ratios, IEnumerable<string> resolutions,
+        string defaultRatio, string defaultResolution, int? maxImages)
+    {
+        Ratios = Array.AsReadOnly(ratios.ToArray());
+        Resolutions = Array.AsReadOnly(resolutions.ToArray());
+        DefaultRatio = defaultRatio;
+        DefaultResolution = defaultResolution;
+        MaxImages = maxImages;
+    }
+    public IReadOnlyList<string> Ratios { get; }
+    public IReadOnlyList<string> Resolutions { get; }
+    public string DefaultRatio { get; }
+    public string DefaultResolution { get; }
+    public int? MaxImages { get; }
+}
+
 public sealed class AiGenerationProviderProfile
 {
     public AiGenerationProviderProfile(
@@ -123,6 +142,14 @@ public sealed class AiGenerationProviderProfile
         string apiKey,
         string baseUrl,
         AiGenerationAdapterCapabilities? declaredCapabilities = null)
+        : this(id, displayName, providerId, adapterKind, modelName, apiKey, baseUrl, declaredCapabilities, null)
+    {
+    }
+
+    public AiGenerationProviderProfile(
+        string id, string displayName, string providerId, string adapterKind, string modelName,
+        string apiKey, string baseUrl, AiGenerationAdapterCapabilities? declaredCapabilities,
+        AiGenerationModelConstraints? modelConstraints)
     {
         Id = Required(id, nameof(id));
         DisplayName = Required(displayName, nameof(displayName));
@@ -132,6 +159,7 @@ public sealed class AiGenerationProviderProfile
         ApiKey = Required(apiKey, nameof(apiKey));
         BaseUri = ParseBaseUri(baseUrl);
         DeclaredCapabilities = declaredCapabilities;
+        ModelConstraints = modelConstraints;
     }
 
     public string Id { get; }
@@ -141,6 +169,7 @@ public sealed class AiGenerationProviderProfile
     public string ModelName { get; }
     public Uri BaseUri { get; }
     public AiGenerationAdapterCapabilities? DeclaredCapabilities { get; }
+    public AiGenerationModelConstraints? ModelConstraints { get; }
     /// <summary>
     /// Credential for the selected profile. Adapter implementations may use it
     /// only for the current provider request and must never log or persist it.
@@ -173,53 +202,6 @@ public sealed class AiGenerationProviderProfile
 
         return uri;
     }
-}
-
-internal static class AiGenerationEndpointPolicy
-{
-    private const string AxonCatRelayHost = "cpa.axoncat.com";
-    private const string GoogleGeminiHost = "generativelanguage.googleapis.com";
-
-    public static Uri ResolveNanoBananaEndpoint(Uri baseUri, string modelName)
-    {
-        ArgumentNullException.ThrowIfNull(baseUri);
-        string model = string.IsNullOrWhiteSpace(modelName)
-            ? throw new AiGenerationException(AiGenerationErrorCode.InvalidConfiguration, "Nano Banana 模型名不能为空。")
-            : Uri.EscapeDataString(modelName.Trim());
-        string path = baseUri.AbsolutePath.Trim('/');
-        string action = UsesStreamingEndpoint(baseUri)
-            ? "streamGenerateContent?alt=sse"
-            : "generateContent";
-        string baseText = baseUri.AbsoluteUri.TrimEnd('/');
-        if (path.Length == 0)
-        {
-            if (string.Equals(baseUri.IdnHost, AxonCatRelayHost, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(baseUri.IdnHost, GoogleGeminiHost, StringComparison.OrdinalIgnoreCase))
-            {
-                return new Uri($"{baseText}/v1beta/models/{model}:{action}", UriKind.Absolute);
-            }
-
-            throw new AiGenerationException(
-                AiGenerationErrorCode.InvalidConfiguration,
-                "Nano Banana Base URL 缺少 API 前缀。请填写完整地址，例如 https://generativelanguage.googleapis.com/v1beta。");
-        }
-
-        // An explicit API prefix is authoritative. In particular, Sub2API's
-        // Antigravity-backed Gemini route is /antigravity/v1beta; replacing it
-        // with /v1beta sends the same valid key to the wrong platform gateway.
-        return new Uri($"{baseText}/models/{model}:{action}", UriKind.Absolute);
-    }
-
-    public static bool UsesGoogleApiKeyHeader(Uri baseUri) =>
-        string.Equals(baseUri.IdnHost, GoogleGeminiHost, StringComparison.OrdinalIgnoreCase);
-
-    public static bool UsesStreamingEndpoint(Uri baseUri) =>
-        !(string.Equals(baseUri.IdnHost, AxonCatRelayHost, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(
-                baseUri.AbsolutePath.Trim('/'),
-                "antigravity/v1beta",
-                StringComparison.OrdinalIgnoreCase));
-
 }
 
 public sealed class AiGenerationReferenceImage

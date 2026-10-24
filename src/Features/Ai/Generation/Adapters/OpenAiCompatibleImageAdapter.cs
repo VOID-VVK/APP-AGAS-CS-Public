@@ -163,7 +163,13 @@ public sealed class OpenAiCompatibleImageAdapter : IAiImageGenerationAdapter
             payload["background"] = "transparent";
             payload["output_format"] = "png";
         }
-        if (!isGptImageModel)
+        // Fixed provider defaults are metadata constraints, not Google or
+        // legacy DALL-E parameters. The verified compatible route accepts the
+        // minimal model/prompt/n body and chooses its registry resolution.
+        bool providerDefaults = !isGptImageModel && profile.ModelConstraints is { } constraints
+            && (constraints.Ratios.Count > 0 || constraints.Resolutions.Count > 0);
+        if (providerDefaults) payload.Remove("size");
+        if (!isGptImageModel && !providerDefaults)
         {
             payload["response_format"] = "b64_json";
         }

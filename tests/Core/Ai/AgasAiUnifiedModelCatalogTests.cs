@@ -6,7 +6,7 @@ namespace AppAgasCs.Tests.Core.Ai;
 public sealed class AgasAiUnifiedModelCatalogTests
 {
     [Fact]
-    public void Models_ExposeSevenCanonicalEntriesInDeterministicOrder()
+    public void Models_ExposeDatedSixteenModelFallbackInDeterministicOrder()
     {
         Assert.Equal(
             new[]
@@ -14,10 +14,10 @@ public sealed class AgasAiUnifiedModelCatalogTests
                 "gpt-image-2",
                 "gpt-image-2.5-flare",
                 "gpt-image-2.5-sunburst",
-                "grok-imagine-image-quality",
-                "grok-imagine-image",
-                "grok-imagine-image-2.0",
                 "gemini-image",
+                "jimeng-image-5.0-lite", "jimeng-image-2.0-pro", "jimeng-image-3.0", "jimeng-image-3.1",
+                "jimeng-image-4.0", "jimeng-image-4.1", "jimeng-image-4.5", "jimeng-image-4.6",
+                "jimeng-image-4.7", "jimeng-image-5.0-pro", "jimeng-image-seedream-5.0-flash", "jimeng-image-v8.2",
             },
             AgasAiUnifiedModelCatalog.Models.Select(model => model.ModelName));
         Assert.All(
@@ -34,13 +34,16 @@ public sealed class AgasAiUnifiedModelCatalogTests
         Assert.Contains("nativeAlphaMask", model.Capabilities);
     }
 
-    [Theory]
-    [InlineData("grok-imagine-image-quality")]
-    [InlineData("grok-imagine-image")]
-    [InlineData("grok-imagine-image-2.0")]
-    public void GrokCapabilities_AreConservativeWithoutVerifiedEditContract(string modelName)
+    [Fact]
+    public void JimengFallback_UsesVerifiedTextOnlyFixedSizeContract()
     {
-        Assert.True(AgasAiUnifiedModelCatalog.TryGet(modelName, out AgasAiUnifiedModel model));
-        Assert.Equal(new[] { "textToImage" }, model.Capabilities);
+        Assert.Equal("2026-10-24", AgasAiUnifiedModelCatalog.SnapshotDate);
+        Assert.All(AgasAiUnifiedModelCatalog.Models.Where(model => model.Category == "jimeng"), model =>
+        {
+            Assert.Equal(new[] { "textToImage" }, model.Capabilities);
+            Assert.Equal(new[] { "1:1" }, model.Ratios);
+            Assert.Equal("1:1", model.DefaultRatio);
+            Assert.Equal(1, model.MaxImages);
+        });
     }
 }

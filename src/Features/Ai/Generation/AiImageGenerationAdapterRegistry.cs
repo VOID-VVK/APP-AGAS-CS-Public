@@ -75,7 +75,6 @@ public sealed class AiImageGenerationAdapterRegistry
         var adapters = new List<IAiImageGenerationAdapter>
         {
             new OpenAiCompatibleImageAdapter(),
-            new GeminiCompatibleImageAdapter(),
             new NewApiImageAdapter(),
         };
         var errors = new List<AiAdapterPluginLoadError>();

@@ -14,7 +14,10 @@ public sealed class AgasAiSettingsUiIntegrationTests
         using var home = new Home();
         AgasAiProfile original = home.Profile with { Name = "Original", ModelName = "model-known" };
         home.Store.SaveProfiles(new AgasAiProfilesDocument(3, original.Id, new[] { original }));
-        var service = new AgasAiProfileSettingsService(home.Store, home.Catalog);
+        home.Store.SetCredential(original.Id, "fixture-ui-key");
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(home.Store);
+        var service = new AgasAiProfileSettingsService(home.Store, home.Catalog, models.Discovery);
         var bridge = new SimpleBridge(original.Id);
 
         const string mcpModel = "gpt-image-2.5-flare";
@@ -121,6 +124,9 @@ public sealed class AgasAiSettingsUiIntegrationTests
     public void UnifiedModelKnownPresetIsUnaffectedByPostcommitLegacyCatalogChange()
     {
         using var home = new Home();
+        home.Store.SetCredential(home.Profile.Id, "fixture-ui-key");
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(home.Store);
         string providerFile = home.ProviderFile;
         var bridge = new SimpleBridge("profile-1")
         {
@@ -131,7 +137,7 @@ public sealed class AgasAiSettingsUiIntegrationTests
             },
         };
         var facade = new AgasMcpAiSettingsFacade(
-            new AgasAiProfileSettingsService(home.Store, home.Catalog),
+            new AgasAiProfileSettingsService(home.Store, home.Catalog, models.Discovery),
             bridge,
             new AgasMcpDirtyState());
 

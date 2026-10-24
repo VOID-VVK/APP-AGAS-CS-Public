@@ -748,8 +748,10 @@ public partial class MainWorkspace : Control
             {
                 try
                 {
-                    AgasAiProfilesDocument document = new AgasAiSettingsStore().LoadProfiles();
-                    options = AgasAiUnifiedModelCatalog.Models
+                    AgasAiSettingsStore store = new();
+                    AgasAiProfilesDocument document = store.LoadProfiles();
+                    AgasAiModelSnapshot snapshot = new AgasAiConnectionModelAccess(store).Snapshot();
+                    options = snapshot.Models.Where(model => snapshot.IsReady && model.IsAvailable)
                         .Select(model => new AiGenerationProfileOption(model.ModelName, model.DisplayName))
                         .ToArray();
                     selectedId ??= document.ActiveModelName;

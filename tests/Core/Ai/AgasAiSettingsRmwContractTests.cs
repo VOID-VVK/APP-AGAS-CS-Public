@@ -89,7 +89,9 @@ public sealed class AgasAiSettingsRmwContractTests
             ApiKey = "credential-value",
         };
         store.SaveProfiles(new AgasAiProfilesDocument(5, profile.Id, "before-model", new[] { profile }));
-        var coordinator = new AgasAiSettingsRmwCoordinator(store, home.ProviderCatalog);
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(store);
+        var coordinator = new AgasAiSettingsRmwCoordinator(store, home.ProviderCatalog, models.Discovery);
 
         AgasAiSettingsMutationResult result = coordinator.SetActiveModel(
             "  gpt-image-2.5-flare  ",

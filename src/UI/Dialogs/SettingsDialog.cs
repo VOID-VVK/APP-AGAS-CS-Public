@@ -567,10 +567,12 @@ public partial class SettingsDialog : AcceptDialog
                 _selectedProfileId = null;
                 ClearDetails();
             }
-            SetStatus(
-                _store.CredentialMigrationWarning
+            bool retired = index >= 0 && AgasAiConnectionModelResolver.UsesRetiredProtocol(_document.Profiles[index], _providerCatalog);
+            SetStatus(retired
+                ? "旧 Google 私有协议已停用。请填写统一 API 地址和对应的新 Key 后保存。"
+                : _store.CredentialMigrationWarning
                     ?? "选择左侧连接即可启用；所有模型共用该连接的 Base URL 和 API Key。",
-                false);
+                retired);
         }
         catch
         {
@@ -619,6 +621,7 @@ public partial class SettingsDialog : AcceptDialog
             {
                 Name = _nameEdit.Text.Trim(),
                 BaseUrl = _baseUrlEdit.Text.Trim(),
+                ProviderId = AgasAiProviderIds.AxonCatNewApi,
             };
             string? credential = _credentialEdited && !string.IsNullOrWhiteSpace(_keyEdit.Text)
                 ? _keyEdit.Text

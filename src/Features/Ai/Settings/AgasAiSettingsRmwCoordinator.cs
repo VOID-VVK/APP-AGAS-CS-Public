@@ -12,12 +12,16 @@ namespace AppAgasCs.Features.Ai.Settings;
 public sealed class AgasAiSettingsRmwCoordinator
 {
     private readonly AgasAiSettingsStore _store;
+    private readonly AgasAiConnectionModelAccess _models;
+    private readonly Func<AgasAiProviderCatalog> _providerCatalog;
     public AgasAiSettingsRmwCoordinator(
         AgasAiSettingsStore store,
-        Func<AgasAiProviderCatalog>? providerCatalog = null)
+        Func<AgasAiProviderCatalog>? providerCatalog = null,
+        AgasAiModelDiscovery? discovery = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
-        _ = providerCatalog;
+        _providerCatalog = providerCatalog ?? (() => AgasAiProviderCatalog.Load(_store.HomeDirectory));
+        _models = new AgasAiConnectionModelAccess(_store, discovery, _providerCatalog);
     }
 
     public AgasAiSettingsMutationResult ActivateProfile(
@@ -90,6 +94,8 @@ public sealed class AgasAiSettingsRmwCoordinator
                 {
                     return AgasAiSettingsMutationResult.Fail(AgasAiSettingsMutationFailure.ProfileNotFound);
                 }
+                if (AgasAiConnectionModelResolver.UsesRetiredProtocol(target, _providerCatalog()))
+                    return AgasAiSettingsMutationResult.Fail(AgasAiSettingsMutationFailure.ProviderUnavailable);
 
                 IReadOnlyList<string> credentials = _store.LoadCredentialValuesInsideSharedGate();
                 credentialConfigured = _store.HasCredential(target.Id);
@@ -104,7 +110,7 @@ public sealed class AgasAiSettingsRmwCoordinator
                         return AgasAiSettingsMutationResult.Fail(AgasAiSettingsMutationFailure.ModelInvalid);
                     }
                 }
-                knownPreset = AgasAiUnifiedModelCatalog.TryGet(effectiveModel, out _);
+                knownPreset = _models.TryGet(effectiveModel, out _, target.Id);
 
                 AgasAiProfilesDocument updated = activate
                     ? new AgasAiProfilesDocument(

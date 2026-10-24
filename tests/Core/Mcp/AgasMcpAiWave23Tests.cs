@@ -33,16 +33,8 @@ public sealed class AgasMcpAiWave23Tests
         Assert.Equal("[redacted]", profiles.EffectiveCurrent?.ModelName);
         Assert.Equal(AgasAiProviderIds.AxonCatNewApi, Assert.Single(models.Providers).ProviderId);
         Assert.Equal(
-            new[]
-            {
-                "gpt-image-2",
-                "gpt-image-2.5-flare",
-                "gpt-image-2.5-sunburst",
-                "grok-imagine-image-quality",
-                "grok-imagine-image",
-                "grok-imagine-image-2.0",
-                "gemini-image",
-            },
+            AgasAiUnifiedModelCatalog.Models.Select(model => model.ModelName).Concat(new[]
+                { "grok-imagine-image-quality", "grok-imagine-image", "grok-imagine-image-2.0", "future-partner-image" }),
             Assert.Single(models.Providers).Models.Select(row => row.ModelName));
         Assert.Empty(diagnostics.Capabilities);
         Assert.False(diagnostics.NetworkChecked);
@@ -58,6 +50,11 @@ public sealed class AgasMcpAiWave23Tests
         Assert.Equal(AgasMcpCommitExecutionState.Completed, activateExecution.State);
 
         fixture.Bridge.ActiveProfileId = "profile-b";
+        AgasMcpToolResponse missingKey = fixture.Facade.SetModel(new AgasAiModelSetInput("gemini-image"));
+        Assert.False(missingKey.Ok);
+        Assert.Equal(AgasMcpErrorCodes.AiModelInvalid, missingKey.Error?.Code);
+        fixture.Store.SetCredential("profile-b", "fixture-second-key");
+        fixture.PrimeModels();
         var modelExecution = new AgasMcpCommitExecution(AgasMcpCommitPolicy.ShortAtomicCommit);
         AgasMcpToolResponse setResponse = fixture.Facade.SetModel(
             new AgasAiModelSetInput("gemini-image"), modelExecution);
@@ -314,6 +311,7 @@ public sealed class AgasMcpAiWave23Tests
     private sealed class SettingsFixture : IDisposable
     {
         private readonly string _root;
+        private readonly AppAgasCs.Tests.Core.Ai.ImageModelDiscoveryFixture _models = new();
 
         public SettingsFixture()
         {
@@ -341,10 +339,11 @@ public sealed class AgasMcpAiWave23Tests
             var second = new AgasAiProfile("profile-b", "Second", "vendor.provider", "model-known", "https://relay.example/v1/");
             Store.SaveProfiles(new AgasAiProfilesDocument(3, first.Id, new[] { second, first }));
             Store.SetCredential(first.Id, "secret-api-key");
+            _models.Prime(Store);
             Bridge = new Bridge(first.Id);
             var service = new AgasAiProfileSettingsService(
                 Store,
-                () => AgasAiProviderCatalog.LoadFromDirectory(providers));
+                () => AgasAiProviderCatalog.LoadFromDirectory(providers), _models.Discovery);
             Facade = new AgasMcpAiSettingsFacade(
                 service,
                 Bridge,
@@ -356,9 +355,11 @@ public sealed class AgasMcpAiWave23Tests
         public AgasAiSettingsStore Store { get; }
         public Bridge Bridge { get; }
         public AgasMcpAiSettingsFacade Facade { get; }
+        public void PrimeModels() => _models.Prime(Store);
 
         public void Dispose()
         {
+            _models.Dispose();
             try { Directory.Delete(_root, recursive: true); }
             catch (DirectoryNotFoundException) { }
         }

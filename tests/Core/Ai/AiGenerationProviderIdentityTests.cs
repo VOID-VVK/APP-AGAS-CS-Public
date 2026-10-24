@@ -66,9 +66,11 @@ public sealed class AiGenerationProviderIdentityTests
             "https://relay.example/v1/",
             "credential");
 
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(legacyConnection);
         AiGenerationProviderProfile resolved = AgasAiConnectionModelResolver.Resolve(
             legacyConnection,
-            "GPT-IMAGE-2.5-FLARE");
+            "GPT-IMAGE-2.5-FLARE", models.Discovery);
 
         Assert.Equal(AgasAiProviderIds.AxonCatNewApi, resolved.ProviderId);
         Assert.Equal(AgasAiUnifiedModelCatalog.ConnectionAdapterKind, resolved.AdapterKind);

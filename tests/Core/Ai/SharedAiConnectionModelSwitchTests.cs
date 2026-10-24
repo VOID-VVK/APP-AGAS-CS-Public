@@ -56,16 +56,19 @@ public sealed class SharedAiConnectionModelSwitchTests
         AgasAiProviderCatalog catalog = AgasAiProviderCatalog.Load(home.Path);
         AgasAiProfilesDocument ensured = AgasAiNewApiSetup.EnsureProfile(store, catalog);
         Assert.Equal(profileId, ensured.ActiveProfileId);
-        Assert.Equal(UnifiedModels, AgasAiUnifiedModelCatalog.Models.Select(model => model.ModelName));
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(store);
+        Assert.All(UnifiedModels, model => Assert.True(models.Discovery
+            .GetSnapshot(original with { ApiKey = credential }).TryGet(model, out _)));
 
         var bridge = new StableBridge(profileId);
         var facade = new AgasMcpAiSettingsFacade(
-            new AgasAiProfileSettingsService(store, () => AgasAiProviderCatalog.Load(home.Path)),
+            new AgasAiProfileSettingsService(store, () => AgasAiProviderCatalog.Load(home.Path), models.Discovery),
             bridge,
             new AgasMcpDirtyState());
         var handler = new RecordingHandler(credential);
         using var client = new NetHttpClient(handler);
-        var service = new AiGenerationService(client, imageDownloadClient: client);
+        var service = new AiGenerationService(client, models.Registry(), imageDownloadClient: client);
 
         foreach (string model in UnifiedModels)
         {
@@ -99,7 +102,7 @@ public sealed class SharedAiConnectionModelSwitchTests
                 "Switching models must retain the credential on the same connection.");
             AiGenerationProviderProfile runtimeProfile = AgasAiConnectionModelResolver.Resolve(
                 persisted with { ApiKey = store.GetCredential(profileId) },
-                persistedDocument.ActiveModelName);
+                persistedDocument.ActiveModelName, models.Discovery);
             Assert.Equal(profileId, runtimeProfile.Id);
             Assert.Equal(AgasAiProviderIds.AxonCatNewApi, runtimeProfile.ProviderId);
             Assert.Equal(AgasAiUnifiedModelCatalog.ConnectionAdapterKind, runtimeProfile.AdapterKind);
@@ -185,9 +188,11 @@ public sealed class SharedAiConnectionModelSwitchTests
             new[] { first, second }));
         store.SetCredential(first.Id, "credential-a");
         store.SetCredential(second.Id, "credential-b");
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(store);
         var bridge = new StableBridge(first.Id);
         var facade = new AgasMcpAiSettingsFacade(
-            new AgasAiProfileSettingsService(store), bridge, new AgasMcpDirtyState());
+            new AgasAiProfileSettingsService(store, discovery: models.Discovery), bridge, new AgasMcpDirtyState());
 
         AgasMcpToolResponse activate = facade.Activate(new AgasAiProfileActivateInput(second.Id));
         Assert.True(activate.Ok);
@@ -221,6 +226,9 @@ public sealed class SharedAiConnectionModelSwitchTests
             first.Id,
             "gpt-image-2",
             new[] { first, second }));
+        seed.SetCredential(first.Id, "fixture-concurrent-key");
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(seed);
         using var modelBeforeReplace = new ManualResetEventSlim();
         using var allowModelReplace = new ManualResetEventSlim();
         using var activationAttempted = new ManualResetEventSlim();
@@ -231,11 +239,11 @@ public sealed class SharedAiConnectionModelSwitchTests
         });
         var activateStore = new AgasAiSettingsStore(home.Path);
         var modelFacade = new AgasMcpAiSettingsFacade(
-            new AgasAiProfileSettingsService(modelStore),
+            new AgasAiProfileSettingsService(modelStore, discovery: models.Discovery),
             new StableBridge(first.Id),
             new AgasMcpDirtyState());
         var activateFacade = new AgasMcpAiSettingsFacade(
-            new AgasAiProfileSettingsService(activateStore),
+            new AgasAiProfileSettingsService(activateStore, discovery: models.Discovery),
             new StableBridge(first.Id),
             new AgasMcpDirtyState());
 
@@ -255,7 +263,7 @@ public sealed class SharedAiConnectionModelSwitchTests
         AgasAiProfilesDocument persisted = seed.LoadProfiles();
         Assert.Equal(second.Id, persisted.ActiveProfileId);
         Assert.Equal("gemini-image", persisted.ActiveModelName);
-        Assert.Equal(new[] { first, second }, persisted.Profiles);
+        Assert.Equal(new[] { first with { ApiKey = "fixture-concurrent-key" }, second }, persisted.Profiles);
         Assert.Empty(Directory.EnumerateFiles(home.Path, "*.tmp", SearchOption.TopDirectoryOnly));
     }
 
@@ -275,7 +283,9 @@ public sealed class SharedAiConnectionModelSwitchTests
             "legacy-model",
             "https://relay.example/v1",
             credential);
-        AiGenerationProviderProfile runtime = AgasAiConnectionModelResolver.Resolve(connection, modelName);
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(connection);
+        AiGenerationProviderProfile runtime = AgasAiConnectionModelResolver.Resolve(connection, modelName, models.Discovery);
         AiGenerationPreparationResult prepared = new AiGenerationRequestPreparationService().Prepare(
             PreparationInput(runtime, home.Path),
             Capture(CanvasPatchGenerationMode.FullRegionGeneration));
@@ -288,7 +298,7 @@ public sealed class SharedAiConnectionModelSwitchTests
 
         var handler = new RecordingHandler(credential);
         using var client = new NetHttpClient(handler);
-        await new AiGenerationService(client, imageDownloadClient: client).GenerateAsync(
+        await new AiGenerationService(client, models.Registry(), imageDownloadClient: client).GenerateAsync(
             runtime,
             prepared.Request);
 
@@ -307,15 +317,17 @@ public sealed class SharedAiConnectionModelSwitchTests
     {
         using var home = new TemporaryHome();
         const string credential = "synthetic-grok-credential";
-        AiGenerationProviderProfile runtime = AgasAiConnectionModelResolver.Resolve(
-            new AgasAiProfile(
+        var connection = new AgasAiProfile(
                 "grok-connection",
                 "Grok relay",
                 "legacy-provider",
                 "legacy-model",
                 "https://relay.example/v1",
-                credential),
-            modelName);
+                credential);
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(connection);
+        AiGenerationProviderProfile runtime = AgasAiConnectionModelResolver.Resolve(connection,
+            modelName, models.Discovery);
         var handler = new RecordingHandler(credential);
         AiGenerationPreparationResult prepared = new AiGenerationRequestPreparationService().Prepare(
             PreparationInput(runtime, home.Path),

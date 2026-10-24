@@ -15,17 +15,18 @@ public sealed class AiGenerationServiceTests
 
     [Theory]
     [InlineData("openai-compatible", "gpt-image-2")]
-    [InlineData("gemini-compatible", "gemini-3-pro-image-preview")]
+    [InlineData("newapi-chat-image", "gemini-image")]
     public async Task ReferenceRepaint_ProviderReceivesExplicitRepaintWithoutFillOnlyOverride(string adapter, string model)
     {
         using var project = new TemporaryProject();
-        bool gemini = adapter == "gemini-compatible";
-        var handler = new RecordingHandler((_, _) => gemini
-            ? JsonResponse(new { candidates = new[] { new { content = new { parts = new[]
-                { new { inlineData = new { mimeType = "image/png", data = Convert.ToBase64String(PngBytes) } } } } } } })
+        bool chat = adapter == "newapi-chat-image";
+        var handler = new RecordingHandler((_, _) => chat
+            ? JsonResponse(new { choices = new[] { new { message = new { content = "data:image/png;base64," + Convert.ToBase64String(PngBytes) } } } })
             : JsonResponse(new { data = new[] { new { b64_json = Convert.ToBase64String(PngBytes) } } }));
         using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
+        var registry = new AiImageGenerationAdapterRegistry(new IAiImageGenerationAdapter[]
+            { new OpenAiCompatibleImageAdapter(), new NewApiChatImageAdapter() });
+        var service = new AiGenerationService(client, registry);
         var profile = new AiGenerationProviderProfile("repaint", "Repaint", adapter, model, "fake-key", "https://relay.example/v1");
         const string instruction = "Repaint the opaque occupancy map as grass and dirt.";
         string prompt = PromptComposer.Compose(Array.Empty<PromptFragmentContent>(), instruction, PromptCompositionMode.ReferenceEdit);
@@ -34,8 +35,8 @@ public sealed class AiGenerationServiceTests
             operation: AiGenerationOperation.ReferenceEdit));
 
         using JsonDocument body = JsonDocument.Parse(Assert.Single(handler.Requests).Body);
-        string sentPrompt = gemini
-            ? body.RootElement.GetProperty("contents")[0].GetProperty("parts")[0].GetProperty("text").GetString()!
+        string sentPrompt = chat
+            ? body.RootElement.GetProperty("messages")[0].GetProperty("content")[0].GetProperty("text").GetString()!
             : body.RootElement.GetProperty("prompt").GetString()!;
         Assert.Contains(instruction, sentPrompt);
         Assert.DoesNotContain("仅补全其中的透明或空白部分", sentPrompt);
@@ -208,7 +209,7 @@ public sealed class AiGenerationServiceTests
     }
 
     [Fact]
-    public async Task NanoRegionEdit_SendsTransparentHoleReferenceAndRegionPrompt_WithoutClaimingNativeMask()
+    public async Task ChatRegionEdit_SendsTransparentHoleReferenceAndRegionPrompt_WithoutClaimingNativeMask()
     {
         using var project = new TemporaryProject();
         byte[] sourceBytes = PngRgba(4, 3, (x, y) => (10, 20, 30, x is >= 1 and < 3 && y == 1 ? (byte)0 : (byte)255));
@@ -219,12 +220,13 @@ public sealed class AiGenerationServiceTests
             new AiGenerationPixelRegion(1, 1, 2, 1));
         var handler = new RecordingHandler((_, _) => JsonResponse(new
         {
-            candidates = new[] { new { content = new { parts = new[] { new { inlineData = new { mimeType = "image/png", data = Convert.ToBase64String(PngBytes) } } } } } }
+            choices = new[] { new { message = new { content = "data:image/png;base64," + Convert.ToBase64String(PngBytes) } } }
         }));
         using var client = new HttpClient(handler);
         var diagnostics = new RecordingDiagnosticSink();
-        var service = new AiGenerationService(client, diagnosticSink: diagnostics);
-        var profile = new AiGenerationProviderProfile("nano", "Nano", "gemini-compatible", "gemini-3-pro-image-preview", "secret", "https://relay.example/v1beta");
+        var registry = new AiImageGenerationAdapterRegistry(new[] { new NewApiChatImageAdapter() });
+        var service = new AiGenerationService(client, registry, diagnosticSink: diagnostics);
+        var profile = new AiGenerationProviderProfile("gemini", "Gemini", "newapi-chat-image", "gemini-image", "secret", "https://relay.example/v1");
 
         AiGenerationResult result = await service.GenerateAsync(profile, new AiGenerationRequest(
             project.Path,
@@ -239,29 +241,26 @@ public sealed class AiGenerationServiceTests
 
         RecordedRequest sent = Assert.Single(handler.Requests);
         using JsonDocument body = JsonDocument.Parse(sent.Body);
-        JsonElement parts = body.RootElement.GetProperty("contents")[0].GetProperty("parts");
+        Assert.Equal("https://relay.example/v1/chat/completions", sent.Uri.AbsoluteUri);
+        JsonElement parts = body.RootElement.GetProperty("messages")[0].GetProperty("content");
         string guidedPrompt = parts[0].GetProperty("text").GetString()!;
-        Assert.Contains("Transparent pixels in the attached reference image are editable", guidedPrompt, StringComparison.Ordinal);
-        Assert.Contains("non-transparent pixels are protected", guidedPrompt, StringComparison.Ordinal);
+        Assert.Contains("Transparent pixels in the first reference image are editable", guidedPrompt, StringComparison.Ordinal);
+        Assert.Contains("preserve the other pixels", guidedPrompt, StringComparison.Ordinal);
         Assert.True(
             guidedPrompt.IndexOf("[Technical details]", StringComparison.Ordinal)
                 < guidedPrompt.IndexOf(PromptComposer.TaskHeader, StringComparison.Ordinal),
             "Provider technical details must precede the canonical task.");
         Assert.EndsWith(PromptComposer.ReferenceEditTask, guidedPrompt, StringComparison.Ordinal);
-        string? inlineBase64 = parts[1].GetProperty("inlineData").GetProperty("data").GetString();
-        byte[] inlinePng = Convert.FromBase64String(Assert.IsType<string>(inlineBase64));
+        string inlineUrl = parts[1].GetProperty("image_url").GetProperty("url").GetString()!;
+        Assert.StartsWith("data:image/png;base64,", inlineUrl);
+        byte[] inlinePng = Convert.FromBase64String(inlineUrl.Split(',')[1]);
         AiGenerationReferenceImage inlineQ = AiGenerationReferenceImage.Create(inlinePng, "image/png");
         Assert.Equal(4, inlineQ.PixelWidth);
         Assert.Equal(3, inlineQ.PixelHeight);
         Assert.Equal(sourceBytes, inlinePng);
         Assert.DoesNotContain("mask", sent.Body, StringComparison.OrdinalIgnoreCase);
-        JsonElement generationConfig = body.RootElement.GetProperty("generationConfig");
-        Assert.Equal(
-            new[] { "Image" },
-            generationConfig.GetProperty("responseModalities").EnumerateArray().Select(value => value.GetString()));
-        JsonElement imageConfig = generationConfig.GetProperty("imageConfig");
-        Assert.Equal("4:3", imageConfig.GetProperty("aspectRatio").GetString());
-        Assert.Equal("1K", imageConfig.GetProperty("imageSize").GetString());
+        Assert.Contains("aspect ratio 4:3", guidedPrompt);
+        Assert.False(body.RootElement.TryGetProperty("generationConfig", out _));
         Assert.False(body.RootElement.TryGetProperty("width", out _));
         Assert.False(body.RootElement.TryGetProperty("height", out _));
         Assert.False(body.RootElement.TryGetProperty("size", out _));
@@ -734,522 +733,6 @@ public sealed class AiGenerationServiceTests
     }
 
     [Fact]
-    public async Task NanoBananaAdapter_UsesGeminiRouteHeaderAndNativePayload()
-    {
-        using var project = new TemporaryProject();
-        const string secret = "gemini-key-never-in-body";
-        var handler = new RecordingHandler((request, _) => JsonResponse(new
-        {
-            candidates = new[]
-            {
-                new
-                {
-                    content = new
-                    {
-                        parts = new[]
-                        {
-                            new { inlineData = new { mimeType = "image/png", data = Convert.ToBase64String(PngBytes) } }
-                        }
-                    }
-                }
-            }
-        }));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile("nano", "Google Gemini", "gemini-compatible", "gemini-3-pro-image-preview", secret, "https://generativelanguage.googleapis.com");
-
-        AiGenerationResult result = await service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "pixel grass", 1024, 512));
-
-        RecordedRequest sent = Assert.Single(handler.Requests);
-        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse", sent.Uri.AbsoluteUri);
-        Assert.Null(sent.Authorization);
-        Assert.Equal(secret, sent.ApiKey);
-        Assert.Equal("text/event-stream", sent.Accept);
-        Assert.DoesNotContain(secret, sent.Body, StringComparison.Ordinal);
-        using JsonDocument body = JsonDocument.Parse(sent.Body);
-        JsonElement generationConfig = body.RootElement.GetProperty("generationConfig");
-        Assert.Equal(
-            new[] { "Image" },
-            generationConfig.GetProperty("responseModalities").EnumerateArray().Select(value => value.GetString()));
-        Assert.Equal("16:9", generationConfig.GetProperty("imageConfig").GetProperty("aspectRatio").GetString());
-        Assert.Equal("1K", generationConfig.GetProperty("imageConfig").GetProperty("imageSize").GetString());
-        Assert.Equal("pixel grass", body.RootElement.GetProperty("contents")[0].GetProperty("parts")[0].GetProperty("text").GetString());
-        Assert.Equal("image/png", result.MimeType);
-        Assert.True(File.Exists(System.IO.Path.Combine(project.Path, result.RelativePath.Replace('/', System.IO.Path.DirectorySeparatorChar))));
-    }
-
-    [Theory]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 1024, 1024, "1:1")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 1024, 8192, "1:8")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 8192, 1024, "8:1")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 1536, 1024, "3:2")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 1024, 1536, "2:3")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 1024, 512, "16:9")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", 512, 1024, "9:16")]
-    [InlineData("https://generativelanguage.googleapis.com", 1024, 8192, "9:16")]
-    [InlineData("https://generativelanguage.googleapis.com", 8192, 1024, "21:9")]
-    public async Task NanoBananaAdapter_MapsRequestedDimensionsToSupportedAspectRatio(
-        string baseUrl,
-        int width,
-        int height,
-        string expectedAspectRatio)
-    {
-        using var project = new TemporaryProject();
-        var handler = new RecordingHandler((_, _) => JsonResponse(new
-        {
-            candidates = new[]
-            {
-                new
-                {
-                    content = new
-                    {
-                        parts = new[]
-                        {
-                            new { inlineData = new { mimeType = "image/png", data = Convert.ToBase64String(PngBytes) } }
-                        }
-                    }
-                }
-            }
-        }));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano",
-            "Nano",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            "secret",
-            baseUrl);
-
-        await service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "pixel grass", width, height));
-
-        RecordedRequest sent = Assert.Single(handler.Requests);
-        using JsonDocument body = JsonDocument.Parse(sent.Body);
-        string? aspectRatio = body.RootElement
-            .GetProperty("generationConfig")
-            .GetProperty("imageConfig")
-            .GetProperty("aspectRatio")
-            .GetString();
-        Assert.Equal(expectedAspectRatio, aspectRatio);
-        Assert.NotEqual("auto", aspectRatio);
-    }
-
-    [Fact]
-    public async Task NanoReferenceEdit_CpaMatchesLegacyGeminiForwardWireContract()
-    {
-        using var project = new TemporaryProject();
-        const string secret = "cpa-reference-secret";
-        var handler = new RecordingHandler((_, _) => JsonResponse(new
-        {
-            candidates = new[]
-            {
-                new
-                {
-                    content = new
-                    {
-                        parts = new[]
-                        {
-                            new
-                            {
-                                inlineData = new
-                                {
-                                    mimeType = "image/png",
-                                    data = Convert.ToBase64String(PngBytes)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano",
-            "CPA Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            secret,
-            "https://cpa.axoncat.com/");
-        var reference = AiGenerationReferenceImage.Create(PngBytes, "image/png");
-
-        AiGenerationResult result = await service.GenerateAsync(
-            profile,
-            new AiGenerationRequest(
-                project.Path,
-                "extend the Q reference",
-                1536,
-                1024,
-                new[] { reference },
-                operation: AiGenerationOperation.ReferenceEdit));
-
-        RecordedRequest sent = Assert.Single(handler.Requests);
-        Assert.Equal(HttpMethod.Post, sent.Method);
-        Assert.Equal(
-            "https://cpa.axoncat.com/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse",
-            sent.Uri.AbsoluteUri);
-        Assert.Equal($"Bearer {secret}", sent.Authorization);
-        Assert.Null(sent.ApiKey);
-        Assert.Equal("text/event-stream", sent.Accept);
-        Assert.StartsWith("application/json", sent.ContentType, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(secret, sent.Body, StringComparison.Ordinal);
-
-        using JsonDocument body = JsonDocument.Parse(sent.Body);
-        Assert.Equal(
-            new[] { "contents", "generationConfig" },
-            body.RootElement.EnumerateObject().Select(property => property.Name));
-        JsonElement contents = body.RootElement.GetProperty("contents");
-        JsonElement content = Assert.Single(contents.EnumerateArray());
-        Assert.Equal(
-            new[] { "role", "parts" },
-            content.EnumerateObject().Select(property => property.Name));
-        Assert.Equal("user", content.GetProperty("role").GetString());
-        JsonElement[] parts = content.GetProperty("parts").EnumerateArray().ToArray();
-        Assert.Equal(2, parts.Length);
-        Assert.Equal(new[] { "text" }, parts[0].EnumerateObject().Select(property => property.Name));
-        Assert.Equal("extend the Q reference", parts[0].GetProperty("text").GetString());
-        Assert.Equal(new[] { "inlineData" }, parts[1].EnumerateObject().Select(property => property.Name));
-        JsonElement inlineData = parts[1].GetProperty("inlineData");
-        Assert.Equal(
-            new[] { "mimeType", "data" },
-            inlineData.EnumerateObject().Select(property => property.Name));
-        Assert.Equal("image/png", inlineData.GetProperty("mimeType").GetString());
-        Assert.Equal(Convert.ToBase64String(PngBytes), inlineData.GetProperty("data").GetString());
-
-        JsonElement generationConfig = body.RootElement.GetProperty("generationConfig");
-        Assert.Equal(
-            new[] { "responseModalities", "imageConfig" },
-            generationConfig.EnumerateObject().Select(property => property.Name));
-        Assert.Equal(
-            new[] { "Image" },
-            generationConfig.GetProperty("responseModalities").EnumerateArray().Select(value => value.GetString()));
-        JsonElement imageConfig = generationConfig.GetProperty("imageConfig");
-        Assert.Equal(
-            new[] { "aspectRatio", "imageSize" },
-            imageConfig.EnumerateObject().Select(property => property.Name));
-        Assert.Equal("3:2", imageConfig.GetProperty("aspectRatio").GetString());
-        Assert.Equal("2K", imageConfig.GetProperty("imageSize").GetString());
-        Assert.False(body.RootElement.TryGetProperty("width", out _));
-        Assert.False(body.RootElement.TryGetProperty("height", out _));
-        Assert.False(body.RootElement.TryGetProperty("size", out _));
-
-        Assert.Equal(AiGenerationEffectiveOperation.ReferenceEdit, result.EffectiveOperation);
-        Assert.Equal(AiGenerationEditGuarantee.None, result.EditGuarantee);
-        Assert.Equal("image/png", result.MimeType);
-        Assert.True(File.Exists(System.IO.Path.Combine(project.Path, result.RelativePath.Replace('/', System.IO.Path.DirectorySeparatorChar))));
-    }
-
-    [Fact]
-    public async Task NanoGoogleStream_ParsesKeepaliveTextAndImageChunks()
-    {
-        using var project = new TemporaryProject();
-        string encodedImage = Convert.ToBase64String(PngBytes);
-        string streamBody =
-            ": keepalive\n\n"
-            + "event: message\n"
-            + "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"working\"}]}}]}\n\n"
-            + $"data: {{\"candidates\":[{{\"content\":{{\"parts\":[{{\"inlineData\":{{\"mimeType\":\"image/png\",\"data\":\"{encodedImage}\"}}}}]}}}}]}}\n\n"
-            + "data: [DONE]\n\n";
-        var handler = new RecordingHandler((_, _) => SseResponse(streamBody));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano", "Google", "gemini-compatible",
-            "gemini-3-pro-image-preview", "secret", "https://generativelanguage.googleapis.com");
-
-        AiGenerationResult result = await service.GenerateAsync(
-            profile,
-            new AiGenerationRequest(project.Path, "prompt"));
-
-        RecordedRequest sent = Assert.Single(handler.Requests);
-        Assert.EndsWith(":streamGenerateContent?alt=sse", sent.Uri.AbsoluteUri, StringComparison.Ordinal);
-        Assert.Equal("text/event-stream", sent.Accept);
-        Assert.Equal(AiGenerationEffectiveOperation.TextToImage, result.EffectiveOperation);
-        Assert.True(File.Exists(System.IO.Path.Combine(project.Path, result.RelativePath.Replace('/', System.IO.Path.DirectorySeparatorChar))));
-    }
-
-    [Fact]
-    public async Task NanoStream_HttpErrorStillUsesSafeJsonErrorMapping()
-    {
-        using var project = new TemporaryProject();
-        var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.BadRequest)
-        {
-            Content = new StringContent(
-                "{\"error\":{\"status\":\"INVALID_ARGUMENT\",\"message\":\"private detail\"}}",
-                Encoding.UTF8,
-                "application/json")
-        });
-        using var client = new HttpClient(handler);
-        var diagnostics = new RecordingDiagnosticSink();
-        var service = new AiGenerationService(client, diagnosticSink: diagnostics);
-        var profile = new AiGenerationProviderProfile(
-            "nano", "Google", "gemini-compatible",
-            "gemini-3-pro-image-preview", "secret", "https://generativelanguage.googleapis.com");
-
-        AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
-            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "prompt")));
-
-        Assert.Equal(AiGenerationErrorCode.ProviderRequestFailed, error.Code);
-        Assert.Contains("HTTP 400", error.Message, StringComparison.Ordinal);
-        Assert.Contains("code=INVALID_ARGUMENT", error.Message, StringComparison.Ordinal);
-        AiGenerationSafeDiagnostic diagnostic = Assert.Single(diagnostics.Diagnostics);
-        Assert.Equal(AiGenerationFailurePhase.ProviderResponse, diagnostic.Phase);
-        Assert.Equal(AiGenerationAdapterStage.ResponseRead, diagnostic.AdapterStage);
-        Assert.Equal(400, diagnostic.HttpStatus);
-        Assert.Equal("INVALID_ARGUMENT", diagnostic.UpstreamCode);
-        Assert.Null(diagnostic.ExceptionType);
-        Assert.Null(diagnostic.InnerExceptionType);
-    }
-
-    [Fact]
-    public async Task NanoUnexpectedSendFailure_LogsOnlyTypeAndFixedStage()
-    {
-        using var project = new TemporaryProject();
-        const string secret = "unexpected-send-key-secret";
-        const string prompt = "unexpected-send-prompt-secret";
-        const string sensitiveMessage =
-            "Authorization: Bearer unexpected-send-key-secret https://relay.example/private unexpected-send-prompt-secret";
-        var handler = new RecordingHandler(
-            (Func<HttpRequestMessage, CancellationToken, HttpResponseMessage>)((_, _) =>
-                throw new SensitiveTransportException(sensitiveMessage, new InvalidDataException(sensitiveMessage))));
-        using var client = new HttpClient(handler);
-        var diagnostics = new RecordingDiagnosticSink();
-        var service = new AiGenerationService(client, diagnosticSink: diagnostics);
-        var profile = new AiGenerationProviderProfile(
-            "nano",
-            "Nano Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            secret,
-            "https://relay.example/v1beta");
-
-        AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
-            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, prompt)));
-
-        Assert.Equal(AiGenerationErrorCode.ProviderRequestFailed, error.Code);
-        Assert.Null(error.InnerException);
-        AiGenerationSafeDiagnostic diagnostic = Assert.Single(diagnostics.Diagnostics);
-        Assert.Same(diagnostic, error.Diagnostic);
-        Assert.Equal(AiGenerationFailurePhase.ProviderRequest, diagnostic.Phase);
-        Assert.Equal(AiGenerationAdapterStage.RequestSend, diagnostic.AdapterStage);
-        Assert.Equal(typeof(SensitiveTransportException).FullName, diagnostic.ExceptionType);
-        Assert.Equal(typeof(InvalidDataException).FullName, diagnostic.InnerExceptionType);
-        string serialized = JsonSerializer.Serialize(diagnostic);
-        Assert.DoesNotContain(secret, serialized, StringComparison.Ordinal);
-        Assert.DoesNotContain(prompt, serialized, StringComparison.Ordinal);
-        Assert.DoesNotContain(sensitiveMessage, serialized, StringComparison.Ordinal);
-        Assert.DoesNotContain("Authorization", serialized, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("https://", serialized, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(secret, error.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain(prompt, error.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task NanoStream_RejectsOversizedDeclaredStreamBeforeReading()
-    {
-        using var project = new TemporaryProject();
-        var handler = new RecordingHandler((_, _) =>
-        {
-            HttpResponseMessage response = SseResponse(string.Empty);
-            response.Content.Headers.ContentLength = 100L * 1024 * 1024;
-            return response;
-        });
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano", "Google", "gemini-compatible",
-            "gemini-3-pro-image-preview", "secret", "https://generativelanguage.googleapis.com");
-
-        AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
-            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "prompt")));
-
-        Assert.Equal(AiGenerationErrorCode.InvalidProviderResponse, error.Code);
-        Assert.Contains("SSE response is too large", error.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task NanoStream_ServiceTimeoutCancelsBlockedSseRead()
-    {
-        using var project = new TemporaryProject();
-        var handler = new RecordingHandler((_, _) =>
-        {
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StreamContent(new CancellationBlockingStream())
-            };
-            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
-            return response;
-        });
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client, timeout: TimeSpan.FromMilliseconds(30));
-        var profile = new AiGenerationProviderProfile(
-            "nano", "Google", "gemini-compatible",
-            "gemini-3-pro-image-preview", "secret", "https://generativelanguage.googleapis.com");
-
-        AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
-            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "prompt")));
-
-        Assert.Equal(AiGenerationErrorCode.RequestTimedOut, error.Code);
-    }
-
-    [Fact]
-    public async Task NanoRelay_InvalidBearerCredentialIsRejectedAsConfigurationErrorBeforeSending()
-    {
-        using var project = new TemporaryProject();
-        const string invalidCredential = "valid-prefix\ninvalid-suffix";
-        var handler = new RecordingHandler(
-            (Func<HttpRequestMessage, CancellationToken, HttpResponseMessage>)((_, _) =>
-                throw new InvalidOperationException("HTTP must not be sent.")));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano",
-            "CPA Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            invalidCredential,
-            "https://cpa.axoncat.com/");
-
-        AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
-            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "private prompt")));
-
-        Assert.Equal(AiGenerationErrorCode.InvalidConfiguration, error.Code);
-        Assert.Contains("Bearer", error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(invalidCredential, error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(handler.Requests);
-    }
-
-    [Theory]
-    [InlineData("https://cpa.axoncat.com", "https://cpa.axoncat.com/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse")]
-    [InlineData("https://cpa.axoncat.com/v1beta/", "https://cpa.axoncat.com/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse")]
-    [InlineData("https://cpa.axoncat.com/antigravity/v1beta", "https://cpa.axoncat.com/antigravity/v1beta/models/gemini-3-pro-image-preview:generateContent")]
-    [InlineData("https://cpa.axoncat.com/custom/gemini", "https://cpa.axoncat.com/custom/gemini/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse")]
-    [InlineData("https://generativelanguage.googleapis.com", "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse")]
-    [InlineData("https://relay.example/api/v1beta", "https://relay.example/api/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse")]
-    [InlineData("https://relay.example/antigravity/v1beta", "https://relay.example/antigravity/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse")]
-    public async Task NanoBananaEndpoint_NormalizesKnownRootAndExplicitApiPrefixes(string baseUrl, string expectedUrl)
-    {
-        using var project = new TemporaryProject();
-        const string secret = "endpoint-secret-never-in-body";
-        var handler = new RecordingHandler((_, _) => JsonResponse(new
-        {
-            candidates = new[] { new { content = new { parts = new[] { new { inlineData = new { mimeType = "image/png", data = Convert.ToBase64String(PngBytes) } } } } } }
-        }));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano",
-            "Nano Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            secret,
-            baseUrl);
-
-        await service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "endpoint prompt"));
-
-        RecordedRequest sent = Assert.Single(handler.Requests);
-        Assert.Equal(expectedUrl, sent.Uri.AbsoluteUri);
-        if (baseUrl.StartsWith("https://generativelanguage.googleapis.com", StringComparison.OrdinalIgnoreCase))
-        {
-            Assert.Null(sent.Authorization);
-            Assert.Equal(secret, sent.ApiKey);
-        }
-        else
-        {
-            Assert.Equal($"Bearer {secret}", sent.Authorization);
-            Assert.Null(sent.ApiKey);
-        }
-        Assert.DoesNotContain(secret, sent.Body, StringComparison.Ordinal);
-        if (baseUrl.StartsWith("https://cpa.axoncat.com/antigravity/v1beta", StringComparison.OrdinalIgnoreCase))
-        {
-            Assert.Empty(sent.Accept);
-        }
-        else
-        {
-            Assert.Equal("text/event-stream", sent.Accept);
-        }
-    }
-
-    [Fact]
-    public async Task NanoAntigravityCpa_UsesDedicatedGeminiPathBearerAuthAndConfiguredModel()
-    {
-        using var project = new TemporaryProject();
-        const string secret = "antigravity-key-never-in-body";
-        var handler = new RecordingHandler((_, _) => JsonResponse(new
-        {
-            candidates = new[]
-            {
-                new
-                {
-                    content = new
-                    {
-                        parts = new[]
-                        {
-                            new { inlineData = new { mimeType = "image/png", data = Convert.ToBase64String(PngBytes) } }
-                        }
-                    }
-                }
-            }
-        }));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano-antigravity",
-            "CPA Antigravity",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            secret,
-            "https://cpa.axoncat.com/antigravity/v1beta");
-
-        await service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "antigravity prompt"));
-
-        RecordedRequest sent = Assert.Single(handler.Requests);
-        Assert.Equal(HttpMethod.Post, sent.Method);
-        Assert.Equal(
-            "/antigravity/v1beta/models/gemini-3-pro-image-preview:generateContent",
-            sent.Uri.AbsolutePath);
-        Assert.Empty(sent.Uri.Query);
-        Assert.Equal($"Bearer {secret}", sent.Authorization);
-        Assert.Null(sent.ApiKey);
-        Assert.Empty(sent.Accept);
-        Assert.StartsWith("application/json", sent.ContentType, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(secret, sent.Body, StringComparison.Ordinal);
-        using JsonDocument body = JsonDocument.Parse(sent.Body);
-        Assert.Equal(
-            new[] { "Image" },
-            body.RootElement.GetProperty("generationConfig").GetProperty("responseModalities")
-                .EnumerateArray().Select(value => value.GetString()));
-    }
-
-    [Fact]
-    public async Task NanoBananaEndpoint_RejectsUnknownThirdPartyRootBeforeSending()
-    {
-        using var project = new TemporaryProject();
-        const string secret = "unknown-root-secret";
-        var handler = new RecordingHandler(
-            (Func<HttpRequestMessage, CancellationToken, HttpResponseMessage>)((_, _) =>
-                throw new InvalidOperationException("HTTP must not be sent.")));
-        using var client = new HttpClient(handler);
-        var service = new AiGenerationService(client);
-        var profile = new AiGenerationProviderProfile(
-            "nano",
-            "Unknown Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
-            secret,
-            "https://unknown-relay.example");
-
-        AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
-            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "private prompt")));
-
-        Assert.Equal(AiGenerationErrorCode.InvalidConfiguration, error.Code);
-        Assert.Contains("API 前缀", error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(secret, error.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("private prompt", error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(handler.Requests);
-    }
-
-    [Fact]
     public async Task ProviderHtmlSuccess_IsReportedAsInvalidResponseWithoutLeakingBody()
     {
         using var project = new TemporaryProject();
@@ -1261,12 +744,12 @@ public sealed class AiGenerationServiceTests
         using var client = new HttpClient(handler);
         var service = new AiGenerationService(client);
         var profile = new AiGenerationProviderProfile(
-            "nano",
-            "CPA Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
+            "image",
+            "Image Relay",
+            "openai-compatible",
+            "gpt-image-2",
             secret,
-            "https://cpa.axoncat.com");
+            "https://relay.example");
 
         AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
             service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "private prompt")));
@@ -1389,12 +872,12 @@ public sealed class AiGenerationServiceTests
         var diagnosticSink = new RecordingDiagnosticSink();
         var service = new AiGenerationService(client, diagnosticSink: diagnosticSink);
         var profile = new AiGenerationProviderProfile(
-            "nano",
-            "Nano Relay",
-            "gemini-compatible",
-            "gemini-3-pro-image-preview",
+            "image",
+            "Image Relay",
+            "openai-compatible",
+            "gpt-image-2",
             secret,
-            "https://relay.example/v1beta");
+            "https://relay.example/v1");
 
         AiGenerationException error = await Assert.ThrowsAsync<AiGenerationException>(() =>
             service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "private prompt")));
@@ -1413,10 +896,8 @@ public sealed class AiGenerationServiceTests
         Assert.False(string.IsNullOrWhiteSpace(diagnostic.DiagnosticId));
     }
 
-    [Theory]
-    [InlineData("openai-compatible")]
-    [InlineData("gemini-compatible")]
-    public async Task ProviderRedirect_IsControlledFailureAndDoesNotForwardKey(string adapterKind)
+    [Fact]
+    public async Task ProviderRedirect_IsControlledFailureAndDoesNotForwardKey()
     {
         using var project = new TemporaryProject();
         const string secret = "redirect-test-secret";
@@ -1431,8 +912,8 @@ public sealed class AiGenerationServiceTests
         var profile = new AiGenerationProviderProfile(
             "profile",
             "Provider",
-            adapterKind,
-            adapterKind == "openai-compatible" ? "gpt-image-2" : "gemini-3-pro-image-preview",
+            "openai-compatible",
+            "gpt-image-2",
             secret,
             "https://relay.example/v1");
 
@@ -1467,17 +948,34 @@ public sealed class AiGenerationServiceTests
     }
 
     [Fact]
+    public async Task RetiredGoogleAdapter_CannotSendKeyOrSilentlySelectAnotherProtocol()
+    {
+        using var project = new TemporaryProject();
+        var handler = new RecordingHandler((Func<HttpRequestMessage, CancellationToken, HttpResponseMessage>)
+            ((_, _) => throw new InvalidOperationException("No request expected.")));
+        using var client = new HttpClient(handler);
+        var profile = new AiGenerationProviderProfile("legacy", "Legacy Google", "gemini-compatible",
+            "gemini-3-pro-image-preview", "legacy-key", "https://generativelanguage.googleapis.com/v1beta");
+        var service = new AiGenerationService(client);
+        AiGenerationException failure = await Assert.ThrowsAsync<AiGenerationException>(() =>
+            service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "private prompt")));
+        Assert.Equal(AiGenerationErrorCode.AdapterNotFound, failure.Code);
+        Assert.Empty(handler.Requests);
+        Assert.DoesNotContain("legacy-key", failure.ToString());
+    }
+
+    [Fact]
     public async Task Registry_RoutesByExplicitAdapterKind()
     {
         using var project = new TemporaryProject();
         var gpt = new FakeAdapter("openai-compatible");
-        var nano = new FakeAdapter("gemini-compatible");
+        var nano = new FakeAdapter("custom.vendor-images");
         var registry = new AiImageGenerationAdapterRegistry(new IAiImageGenerationAdapter[] { gpt, nano });
         Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> unexpectedHttp =
             (_, _) => throw new InvalidOperationException("No HTTP expected.");
         using var client = new HttpClient(new RecordingHandler(unexpectedHttp));
         var service = new AiGenerationService(client, registry);
-        var profile = new AiGenerationProviderProfile("nano", "Nano", "gemini-compatible", "custom-model", "secret", "https://relay.example");
+        var profile = new AiGenerationProviderProfile("custom", "Custom", "custom.vendor-images", "custom-model", "secret", "https://relay.example");
 
         await service.GenerateAsync(profile, new AiGenerationRequest(project.Path, "tree"));
 
@@ -1727,11 +1225,6 @@ public sealed class AiGenerationServiceTests
         Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
     };
 
-    private static HttpResponseMessage SseResponse(string payload) => new(HttpStatusCode.OK)
-    {
-        Content = new StringContent(payload, Encoding.UTF8, "text/event-stream")
-    };
-
     private static byte[] PngBuffer(int length)
     {
         var bytes = new byte[length];
@@ -1784,33 +1277,6 @@ public sealed class AiGenerationServiceTests
         string Body,
         byte[] BodyBytes);
 
-    private sealed class CancellationBlockingStream : Stream
-    {
-        public override bool CanRead => true;
-        public override bool CanSeek => false;
-        public override bool CanWrite => false;
-        public override long Length => throw new NotSupportedException();
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override void Flush() => throw new NotSupportedException();
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override async ValueTask<int> ReadAsync(
-            Memory<byte> buffer,
-            CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-            return 0;
-        }
-    }
-
     private sealed class RecordingDiagnosticSink : IAiGenerationDiagnosticSink
     {
         public List<AiGenerationSafeDiagnostic> Diagnostics { get; } = new();
@@ -1829,14 +1295,6 @@ public sealed class AiGenerationServiceTests
 
         public void TryWriteRequest(AiGenerationSafeRequestDiagnostic diagnostic) =>
             throw new InvalidOperationException("diagnostic sink failed");
-    }
-
-    private sealed class SensitiveTransportException : Exception
-    {
-        public SensitiveTransportException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
     }
 
     private sealed class FakeAdapter : IAiImageGenerationAdapter

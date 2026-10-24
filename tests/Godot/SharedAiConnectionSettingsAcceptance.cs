@@ -15,12 +15,12 @@ public partial class SharedAiConnectionSettingsAcceptance : Node
 {
     private const string Prefix = "[AGAS][SHARED-AI-CONNECTION]";
 
-    public override void _Ready()
+    public override async void _Ready()
     {
-        Run();
+        await Run();
     }
 
-    private void Run()
+    private async Task Run()
     {
         string home = Path.Combine(Path.GetTempPath(), "agas-shared-ai-connection", Guid.NewGuid().ToString("N"));
         string? previousHome = System.Environment.GetEnvironmentVariable(AgasAiSettingsPaths.HomeEnvironmentVariable);
@@ -99,20 +99,22 @@ public partial class SharedAiConnectionSettingsAcceptance : Node
             Require(store.GetCredential(secondId) == changedKey, "Saving must persist the selected connection key.");
             Require(store.GetCredential(firstId) == firstKey, "Saving one connection must not change another connection key.");
 
-            var panel = new AiGenerationPanel(store, new NeverRunAiGenerationRunner());
+            using var discovered = new ImageModelsAcceptanceFixture();
+            discovered.Prime(first with { ApiKey = firstKey });
+            var panel = discovered.Panel(store);
             AddChild(panel);
+            for (int frame = 0; frame < 300 && panel.ProfileOptions.Count == 0; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             OptionButton models = Required<OptionButton>(panel, "AiGenerationModelPreset");
-            Require(models.ItemCount == AgasAiUnifiedModelCatalog.Models.Count && models.ItemCount == 7,
-                "The model selector must contain exactly the seven unified models.");
-            foreach (AgasAiUnifiedModel model in AgasAiUnifiedModelCatalog.Models)
-            {
-                Require(FindModelIndex(models, model.ModelName) >= 0, $"Missing unified model: {model.ModelName}");
-            }
+            OptionButton categories = Required<OptionButton>(panel, "AiGenerationProvider");
+            Require(categories.ItemCount == 4 && panel.ProfileOptions.Count == 20,
+                "The current connection must expose all discovered models in four independent categories.");
+            Require(models.ItemCount == 3, "The selected GPT category must contain only its three models.");
 
-            const string nextModel = "grok-imagine-image-quality";
-            int nextModelIndex = FindModelIndex(models, nextModel);
-            models.Select(nextModelIndex);
-            models.EmitSignal(OptionButton.SignalName.ItemSelected, (long)nextModelIndex);
+            const string nextModel = "jimeng-image-5.0-lite";
+            Require(panel.SelectModelByName(nextModel), "Selecting a model must also select its category.");
+            Require(models.ItemCount == 12 && categories.GetItemMetadata(categories.Selected).AsString() == "jimeng",
+                "Jimeng must have a separate twelve-model category.");
             AgasAiProfilesDocument afterModelSwitch = store.LoadProfiles();
             Require(afterModelSwitch.ActiveModelName == nextModel, "Selecting a model must update the global model.");
             Require(afterModelSwitch.ActiveProfileId == secondId, "Selecting a model must preserve the active connection.");

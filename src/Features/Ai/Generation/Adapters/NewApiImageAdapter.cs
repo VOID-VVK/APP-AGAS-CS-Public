@@ -12,12 +12,14 @@ public sealed class NewApiImageAdapter : IAiImageGenerationAdapter
 {
     private static readonly IAiImageGenerationAdapter Images = new OpenAiCompatibleImageAdapter(multipartEdits: true);
     private static readonly IAiImageGenerationAdapter Chat = new NewApiChatImageAdapter();
+    private readonly AgasAiModelDiscovery _discovery;
+
+    public NewApiImageAdapter() : this(AgasAiModelDiscovery.Shared) { }
+    public NewApiImageAdapter(AgasAiModelDiscovery discovery) =>
+        _discovery = discovery ?? throw new ArgumentNullException(nameof(discovery));
 
     public string AdapterKind => AgasAiUnifiedModelCatalog.ConnectionAdapterKind;
 
-    internal static bool SupportsNativeMask(string model) =>
-        AgasAiUnifiedModelCatalog.TryGet(model, out AgasAiUnifiedModel route)
-        && route.Capabilities.Contains("nativeAlphaMask", StringComparer.Ordinal);
     public AiGenerationAdapterCapabilities Capabilities =>
         AiGenerationAdapterCapabilities.TextToImage
         | AiGenerationAdapterCapabilities.ReferenceEdit
@@ -30,9 +32,9 @@ public sealed class NewApiImageAdapter : IAiImageGenerationAdapter
         HttpClient imageDownloadClient,
         CancellationToken cancellationToken)
     {
-        if (!AgasAiUnifiedModelCatalog.TryGet(profile.ModelName, out AgasAiUnifiedModel route))
+        if (!_discovery.GetSnapshot(profile.BaseUri.AbsoluteUri, profile.ApiKey).TryGet(profile.ModelName, out AgasAiUnifiedModel route))
             throw new AiGenerationException(AiGenerationErrorCode.InvalidConfiguration,
-                "当前 New API 预设不支持该模型，请选择已配置的图片模型或添加自定义服务商。");
+                "当前 Key 的模型列表中没有该生图模型，请刷新后选择。");
         if (request.Quality.HasValue
             && !AiGenerationQualityPolicy.Supports(route.ModelName))
         {
@@ -62,18 +64,17 @@ public sealed class NewApiImageAdapter : IAiImageGenerationAdapter
                 AiGenerationErrorCode.InvalidConfiguration,
                 "当前 New API 模型没有有效的协议路由。"),
         };
-        AiGenerationProviderProfile canonicalProfile = string.Equals(
-            profile.ModelName, route.ModelName, StringComparison.Ordinal)
-            ? profile
-            : new AiGenerationProviderProfile(
+        var canonicalProfile = new AiGenerationProviderProfile(
                 profile.Id,
                 profile.DisplayName,
                 profile.ProviderId,
-                profile.AdapterKind,
+                route.WireAdapterKind,
                 route.ModelName,
                 profile.ApiKey,
                 profile.BaseUri.AbsoluteUri,
-                profile.DeclaredCapabilities);
+                capabilities,
+                new AiGenerationModelConstraints(route.Ratios, route.Resolutions,
+                    route.DefaultRatio, route.DefaultResolution, route.MaxImages));
         return adapter.GenerateAsync(
             canonicalProfile, request, providerHttpClient, imageDownloadClient, cancellationToken);
     }

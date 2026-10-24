@@ -23,9 +23,11 @@ public sealed class AgasAiConnectionModelResolverTests
             "https://relay.example/custom/v1/",
             "shared-secret");
 
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(connection);
         AiGenerationProviderProfile resolved = AgasAiConnectionModelResolver.Resolve(
             connection,
-            " GPT-IMAGE-2.5-SUNBURST ");
+            " GPT-IMAGE-2.5-SUNBURST ", models.Discovery);
 
         Assert.Equal(connection.Id, resolved.Id);
         Assert.Equal(connection.Name, resolved.DisplayName);
@@ -52,7 +54,7 @@ public sealed class AgasAiConnectionModelResolverTests
         });
         using var client = new HttpClient(handler);
 
-        GeneratedImageData result = await new NewApiImageAdapter().GenerateAsync(
+        GeneratedImageData result = await new NewApiImageAdapter(models.Discovery).GenerateAsync(
             resolved,
             new AiGenerationRequest("/tmp/project", "cat"),
             client,
@@ -63,7 +65,7 @@ public sealed class AgasAiConnectionModelResolverTests
     }
 
     [Fact]
-    public void UnknownModel_IsTrimmedAndGetsNoDeclaredCapabilities()
+    public void UnknownModel_IsRejectedUnlessDeclaredByThisConnectionsMetadata()
     {
         var connection = new AgasAiProfile(
             "shared-connection",
@@ -73,12 +75,16 @@ public sealed class AgasAiConnectionModelResolverTests
             "https://relay.example/v1",
             "shared-secret");
 
-        AiGenerationProviderProfile resolved = AgasAiConnectionModelResolver.Resolve(
-            connection,
-            " custom-image-model ");
+        using var models = new ImageModelDiscoveryFixture();
+        models.Prime(connection);
+        AiGenerationException error = Assert.Throws<AiGenerationException>(() =>
+            AgasAiConnectionModelResolver.Resolve(connection, " custom-image-model ", models.Discovery));
+        Assert.Equal(AiGenerationErrorCode.InvalidConfiguration, error.Code);
 
-        Assert.Equal("custom-image-model", resolved.ModelName);
-        Assert.Equal(AiGenerationAdapterCapabilities.None, resolved.DeclaredCapabilities);
+        AiGenerationProviderProfile resolved = AgasAiConnectionModelResolver.Resolve(
+            connection, " future-partner-image ", models.Discovery);
+        Assert.Equal("future-partner-image", resolved.ModelName);
+        Assert.Equal(AiGenerationAdapterCapabilities.TextToImage, resolved.DeclaredCapabilities);
     }
 
     private static HttpResponseMessage Json(object body) => new(HttpStatusCode.OK)

@@ -83,10 +83,17 @@ public sealed class AgasAiSettingsFieldMergeService
             AgasAiProfile current = fresh.Profiles.FirstOrDefault(item =>
                     string.Equals(item.Id, profile.Id, StringComparison.Ordinal))
                 ?? throw new InvalidOperationException("AI 中转站不存在。");
+            AgasAiProviderCatalog providers = AgasAiProviderCatalog.Load(_store.HomeDirectory);
+            bool convertRetired = AgasAiConnectionModelResolver.UsesRetiredProtocol(current, providers)
+                && profile.ProviderId == AgasAiProviderIds.AxonCatNewApi;
+            if (convertRetired && (string.IsNullOrWhiteSpace(replacementCredential)
+                || !drafts.BaseUrl || AgasAiConnectionModelResolver.UsesRetiredProtocol(profile, providers)))
+                throw new System.IO.InvalidDataException("旧 Google 私有协议已停用。请输入统一 API 地址和对应的新 Key 后保存。");
             AgasAiProfile merged = current with
             {
                 Name = drafts.Name ? profile.Name : current.Name,
                 BaseUrl = drafts.BaseUrl ? profile.BaseUrl : current.BaseUrl,
+                ProviderId = convertRetired ? AgasAiProviderIds.AxonCatNewApi : current.ProviderId,
             };
             if (!AgasAiCredentialOrigin.IsSame(current.BaseUrl, merged.BaseUrl))
                 merged = merged with { ApiKey = null };
