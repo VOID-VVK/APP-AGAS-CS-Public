@@ -79,6 +79,9 @@ public partial class ProjectFilesTreeAcceptance : Node
                 "results/Result 1.png",
                 "results/Result 2.png",
                 "results/Result 10.png",
+                "results/Tools 1.png",
+                "results/Tools 2.png",
+                "results/Tools 10.png",
                 "results/zeta.png",
                 "space dir.inner dir",
                 "space dir.inner dir/image file.png",
@@ -554,6 +557,9 @@ public partial class ProjectFilesTreeAcceptance : Node
         WriteText(root, "results/Result 1.png", "first generated result");
         WriteText(root, "results/Result 10.png", "tenth generated result");
         WriteText(root, "results/Result 2.png", "second generated result");
+        WriteText(root, "results/Tools 1.png", "first tool result");
+        WriteText(root, "results/Tools 10.png", "tenth tool result");
+        WriteText(root, "results/Tools 2.png", "second tool result");
         WriteText(root, "results/zeta.png", "ordinary file after generated results");
 
         WriteText(root, ".cache/cached.png", "must not scan");

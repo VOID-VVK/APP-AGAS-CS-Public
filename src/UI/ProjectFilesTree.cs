@@ -365,8 +365,14 @@ public partial class ProjectFilesTree : Tree
 
     private static void SortGeneratedResultFiles(List<FileTreeNode> imageFiles)
     {
+        SortNumberedFiles(imageFiles, "Result ");
+        SortNumberedFiles(imageFiles, "Tools ");
+    }
+
+    private static void SortNumberedFiles(List<FileTreeNode> imageFiles, string prefix)
+    {
         var resultFiles = imageFiles
-            .Select((file, index) => (File: file, Index: index, Digits: GetNormalizedResultNumber(file.Name)))
+            .Select((file, index) => (File: file, Index: index, Digits: GetNormalizedResultNumber(file.Name, prefix)))
             .Where(item => item.Digits != null)
             .ToArray();
         if (resultFiles.Length < 2)
@@ -386,9 +392,8 @@ public partial class ProjectFilesTree : Tree
         }
     }
 
-    private static string? GetNormalizedResultNumber(string fileName)
+    private static string? GetNormalizedResultNumber(string fileName, string prefix)
     {
-        const string prefix = "Result ";
         string stem = Path.GetFileNameWithoutExtension(fileName);
         if (!stem.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
         {
