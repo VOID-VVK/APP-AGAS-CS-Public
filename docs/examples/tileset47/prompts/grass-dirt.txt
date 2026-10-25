@@ -1,0 +1,9 @@
+IMAGE 1 is the occupancy/layout guide. Follow it strictly. Return the same sheet, fully painted, at exactly the same size and with the same layout. Magenta/colored occupied shapes define region A. Black, transparent, and empty areas define region B. Fill region A with Material A and region B with Material B, as defined below. Preserve the exact stepped layout, T-caps, and 田-shaped inner holes; inner holes remain region B. Do not grow, shrink, round, or drift any shapes. Do not change which pixels belong to region A versus region B, especially on cell edges.
+
+Material A (occupied shapes): grass.
+
+Material B (background and inner holes): dirt.
+
+This is a seamless tileset. Neighboring cells must connect. On every shared cell edge, preserve the region A/B assignment from IMAGE 1 and match the corresponding material, texture, and color across neighboring cells so tiles join seamlessly.
+
+Top-down 2D game art with overhead lighting. Use natural colors and recognizable surface details appropriate to each specified material. Render finished textures rather than flat guide-color fills. No thick dark outlines, leftover guide colors, unpainted areas, grid lines, numbers, or text. Not photorealistic, not 3D. Fully opaque. Match IMAGE 1 exactly in size.

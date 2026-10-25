@@ -1,0 +1,43 @@
+{
+  "case": "Case 1: TileSet 47",
+  "reference": "项目维护者提供的原 tile47 布局参考；保持原图字节",
+  "prompts": "原 tile47 生图结果图层的五个完整启用片段，顺序不变；两个版本仅Material A/B不同",
+  "toolSource": "src/Features/Tools/Execution/ToolPresetSources.cs#Tile47StandardReverse",
+  "assets": [
+    {
+      "file": "reference/tilemap47-guide.png",
+      "description": "原 tile47 布局参考",
+      "width": 1024,
+      "height": 512,
+      "sha256": "2648c1e4a5a7b12bbb5c70ad75b7395c0c75510a7585b536d487990969ff585f"
+    },
+    {
+      "file": "samples/grass-generated.png",
+      "description": "用户确认的草地生成示例 Result 23",
+      "width": 1024,
+      "height": 512,
+      "sha256": "1b265c334c4412bc855df4151461c08ee352ce007fe340f00c8e82be87d57533"
+    },
+    {
+      "file": "samples/sea-sand-generated.png",
+      "description": "用户确认的海水沙滩生成示例 Result 22",
+      "width": 1024,
+      "height": 512,
+      "sha256": "f2d7d2dd8a962239cc868c3a5993c0d649d718878df5e7f63a63489d507c4387"
+    },
+    {
+      "file": "samples/grass-atlas.png",
+      "description": "Result 23 经 Tile47 标准图反推得到 Tools 12",
+      "width": 768,
+      "height": 256,
+      "sha256": "3d47ebce3319a48433979d6b3cce88a0335b8e66effbbff3c430eedf44b68379"
+    },
+    {
+      "file": "samples/sea-sand-atlas.png",
+      "description": "Result 22 经 Tile47 标准图反推得到 Tools 11",
+      "width": 768,
+      "height": 256,
+      "sha256": "7dd8a0bc8d33e0aa1f87a4ea2335dfb3273d36723c62001755e9bb2935d06175"
+    }
+  ]
+}

@@ -54,7 +54,15 @@ MCP 对应提交的 [LICENSE](https://github.com/modelcontextprotocol/csharp-sdk
 
 ## 素材与服务
 
-当前跟踪的仓库中未发现独立捆绑的第三方字体、图片、音频或素材包。
+仓库附带 [Case 1：TileSet 47](docs/examples/tileset47/README.md) 的教学图片：
+`reference/tilemap47-guide.png` 是项目维护者提供的原布局参考；`samples/` 四张图片是
+维护者确认的 AI 生成原图及其标准图反推结果。具体来源、尺寸和 SHA-256 见
+[sources.json](docs/examples/tileset47/sources.json)。它们不是从第三方素材站下载的素材包。
+这些图片用于展示本教程；代码的 MIT 许可不替代原生成服务对模型和生成内容的条款，
+也不构成额外的第三方权利或商业使用保证。提示词及反推工具源码由维护者随本项目提供，
+工具源码沿用本项目 MIT 许可。
+
+除上述教学图片外，本清单未发现独立捆绑的第三方字体、音频或素材包。
 Godot 编辑器 / 引擎内置资源仍受 Godot 自身的许可和第三方声明约束。
 以后引入素材时，应在此记录来源、作者、版本和许可。
 
