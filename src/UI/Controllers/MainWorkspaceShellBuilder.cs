@@ -148,6 +148,7 @@ internal sealed class MainWorkspaceShellBuilder
             CanvasZoomButton = center.CanvasZoomButton,
             AiTaskCountLabel = toolbar.AiTaskCountLabel,
             AiProfileSelector = toolbar.AiProfileSelector,
+            AiModelSyncButton = toolbar.AiModelSyncButton,
             AiQualitySelector = toolbar.AiQualitySelector,
             GridSize = toolbar.GridSize,
             SnapEnabled = toolbar.SnapEnabled,
@@ -308,6 +309,16 @@ internal sealed class MainWorkspaceShellBuilder
         aiProfileSelector.ItemSelected += index => _host.OnAiProfileSelected(index);
         row.AddChild(aiProfileSelector);
 
+        var aiModelSyncButton = new Button
+        {
+            Name = "AiModelSyncButton",
+            Text = "↻ 同步模型",
+            TooltipText = "从当前 AI 连接同步最新上游模型",
+            AccessibilityName = "同步模型",
+        };
+        aiModelSyncButton.Pressed += _host.SynchronizeAiModels;
+        row.AddChild(aiModelSyncButton);
+
         var aiQualitySelector = new OptionButton
         {
             Name = "AiGenerationQualitySelector",
@@ -349,6 +360,7 @@ internal sealed class MainWorkspaceShellBuilder
             redoButton,
             aiTaskCountLabel,
             aiProfileSelector,
+            aiModelSyncButton,
             aiQualitySelector,
             gridSize,
             snapEnabled);
@@ -804,6 +816,7 @@ internal sealed class MainWorkspaceShellBuilder
         Button RedoButton,
         Label AiTaskCountLabel,
         OptionButton AiProfileSelector,
+        Button AiModelSyncButton,
         OptionButton AiQualitySelector,
         SpinBox GridSize,
         CheckBox SnapEnabled);
@@ -854,6 +867,7 @@ internal sealed class MainWorkspaceShellHost
     internal required Action<bool> OnSnapToggled { get; init; }
     internal required Action CloseProject { get; init; }
     internal required Action<long> OnAiProfileSelected { get; init; }
+    internal required Action SynchronizeAiModels { get; init; }
     internal required Action<long> OnAiQualitySelected { get; init; }
     internal required Action<bool, bool> UpdateUndoRedoButtons { get; init; }
     internal required Action<string, bool> SetStatus { get; init; }

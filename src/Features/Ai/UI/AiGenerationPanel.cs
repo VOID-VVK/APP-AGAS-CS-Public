@@ -544,6 +544,13 @@ public partial class AiGenerationPanel : PanelContainer
         }
     }
 
+    public bool IsRefreshingModels => _profileController.IsRefreshingModels;
+
+    public void SynchronizeModels()
+    {
+        if (!_exiting) _profileController.SynchronizeModels();
+    }
+
     public void ReloadProfiles(string? preferredProfileId = null)
     {
         if (_exiting)

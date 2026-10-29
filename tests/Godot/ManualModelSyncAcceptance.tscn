@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://tests/Godot/ManualModelSyncAcceptance.cs" type="Script" id="1"]
+
+[node name="ManualModelSyncAcceptance" type="Node"]
+script = ExtResource("1")

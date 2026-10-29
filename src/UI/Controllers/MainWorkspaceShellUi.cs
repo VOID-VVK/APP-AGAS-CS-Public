@@ -22,6 +22,7 @@ internal sealed class MainWorkspaceShellUi
     internal Button? CanvasZoomButton { get; init; }
     internal Label? AiTaskCountLabel { get; init; }
     internal OptionButton? AiProfileSelector { get; init; }
+    internal Button? AiModelSyncButton { get; init; }
     internal OptionButton? AiQualitySelector { get; init; }
     internal SpinBox? GridSize { get; init; }
     internal CheckBox? SnapEnabled { get; init; }

@@ -12,7 +12,14 @@ internal sealed partial class AiGenerationProfileController
     private CancellationTokenSource? _refreshCancellation;
     private long _refreshGeneration;
 
-    private async void RefreshModels()
+    internal bool IsRefreshingModels => _refreshCancellation != null;
+
+    internal void SynchronizeModels()
+    {
+        if (_connected && !IsRefreshingModels) RefreshModels(manual: true);
+    }
+
+    private async void RefreshModels(bool manual = false)
     {
         _refreshCancellation?.Cancel();
         _refreshCancellation?.Dispose();
@@ -23,11 +30,14 @@ internal sealed partial class AiGenerationProfileController
         {
             var pending = _models.RefreshAsync(profileId, _refreshCancellation.Token);
             PopulateCategories(_profiles.ActiveModelName);
+            if (manual) _statusChanged?.Invoke("正在同步最新上游模型…", false, Array.Empty<object>());
             _selectionChanged?.Invoke();
             AgasAiModelSnapshot snapshot = await pending;
             if (!_connected || generation != _refreshGeneration || SelectedProfileId != profileId) return;
             PopulateCategories(_profiles.ActiveModelName);
-            _statusChanged?.Invoke(snapshot.Message, !snapshot.IsReady || !snapshot.Models.Any(model => model.IsAvailable), Array.Empty<object>());
+            string message = manual && snapshot.Source == "live" && string.IsNullOrEmpty(snapshot.Message)
+                ? "已同步最新上游模型。" : snapshot.Message;
+            _statusChanged?.Invoke(message, !snapshot.IsReady || !snapshot.Models.Any(model => model.IsAvailable), Array.Empty<object>());
             _selectionChanged?.Invoke();
         }
         catch (OperationCanceledException) { }
@@ -38,6 +48,15 @@ internal sealed partial class AiGenerationProfileController
                 _modelPreset.Disabled = true;
                 _statusChanged?.Invoke("模型列表刷新失败，请重试。", true, Array.Empty<object>());
                 _selectionChanged?.Invoke();
+            }
+        }
+        finally
+        {
+            if (generation == _refreshGeneration)
+            {
+                _refreshCancellation?.Dispose();
+                _refreshCancellation = null;
+                if (_connected) _selectionChanged?.Invoke();
             }
         }
     }

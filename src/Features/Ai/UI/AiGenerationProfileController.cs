@@ -111,7 +111,9 @@ internal sealed partial class AiGenerationProfileController
             int index = FindProfileIndex(preferredId);
             if (index >= 0) _profile.Select(index);
             PopulateCategories(_profiles.ActiveModelName);
-            RefreshModels();
+            AgasAiModelSnapshot snapshot = _models.Snapshot(SelectedProfileId);
+            // A local selection reload must not invalidate an already usable model catalog.
+            if (!snapshot.IsReady || !snapshot.Models.Any(model => model.IsAvailable)) RefreshModels();
 
             string message = _profiles.Profiles.Count == 0
                 ? "请先在设置中添加 AI 连接。"

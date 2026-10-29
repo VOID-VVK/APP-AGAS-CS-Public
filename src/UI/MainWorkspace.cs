@@ -87,6 +87,7 @@ public partial class MainWorkspace : Control
     private Label? _aiTaskCountLabel;
     private int _aiTaskCountRefreshQueued;
     private OptionButton? _aiProfileSelector;
+    private Button? _aiModelSyncButton;
     private OptionButton? _aiQualitySelector;
     private bool _syncingAiProfileSelector;
     private SpinBox? _gridSize;
@@ -420,6 +421,7 @@ public partial class MainWorkspace : Control
         },
         CloseProject = CloseProject,
         OnAiProfileSelected = OnAiProfileSelected,
+        SynchronizeAiModels = () => _aiGenerationPanel?.SynchronizeModels(),
         OnAiQualitySelected = OnAiQualitySelected,
         UpdateUndoRedoButtons = UpdateUndoRedoButtons,
         SetStatus = SetStatus,
@@ -651,6 +653,7 @@ public partial class MainWorkspace : Control
         _canvasZoomButton = shell.CanvasZoomButton;
         _aiTaskCountLabel = shell.AiTaskCountLabel;
         _aiProfileSelector = shell.AiProfileSelector;
+        _aiModelSyncButton = shell.AiModelSyncButton;
         _aiQualitySelector = shell.AiQualitySelector;
         _gridSize = shell.GridSize;
         _snapEnabled = shell.SnapEnabled;
@@ -729,6 +732,12 @@ public partial class MainWorkspace : Control
 
     private void SyncAiProfileSelector(string? preferredProfileId)
     {
+        if (_aiModelSyncButton != null)
+        {
+            bool syncing = _aiGenerationPanel?.IsRefreshingModels == true;
+            _aiModelSyncButton.Disabled = _aiGenerationPanel == null || syncing;
+            _aiModelSyncButton.Text = syncing ? "同步中…" : "↻ 同步模型";
+        }
         if (_aiProfileSelector == null)
         {
             return;
@@ -1377,7 +1386,6 @@ public partial class MainWorkspace : Control
         if (!TryEnsureAiTargetLayerEditable()) return;
         if (!CanMutateProject("发送 AI 请求")) return;
         _aiGenerationLayerScope = scope;
-        _aiGenerationPanel?.ReloadProfiles();
         AiGenerationCanvasContext? context = CreateAiGenerationContext(scope);
         if (context == null || _aiGenerationPanel == null)
         {
