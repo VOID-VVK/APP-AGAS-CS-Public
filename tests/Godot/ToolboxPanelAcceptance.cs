@@ -79,13 +79,31 @@ public partial class ToolboxPanelAcceptance : Node
             $"The toolbox did not retain its dragged list width (dragged={draggedWidth}, resized={directory.Size.X}).");
 
         var items = Find<ItemList>(panel, "ToolboxItems");
+        var chains = Find<ItemList>(panel, "ToolboxChainItems");
+        var categoryTabs = Find<TabContainer>(panel, "ToolboxCategoryTabs");
         var createDialog = Find<AcceptDialog>(panel, "ToolboxCreateDialog");
         var createName = Find<LineEdit>(panel, "ToolboxCreateName");
         var code = Find<CodeEdit>(panel, "ToolboxCodeEditor");
         var editorName = Find<LineEdit>(panel, "ToolboxItemName");
         var save = Find<Button>(panel, "ToolboxSave");
+        Require(categoryTabs.GetTabCount() == 2
+                && categoryTabs.GetTabTitle(0) == "工具"
+                && categoryTabs.GetTabTitle(1) == "工具链",
+            "Tool management must expose separate tools and chains tabs.");
         Require(items.ItemCount == 8, "The six built-in and two editable Tile47 tools were not listed.");
+        Require(chains.ItemCount == 0 && categoryTabs.CurrentTab == 0,
+            "The initial tools tab must not contain chains.");
+        Require(panel.FindChild("ToolboxRun", true, false) == null,
+            "The management panel must not expose a run command.");
+        categoryTabs.CurrentTab = 1;
+        await Frame();
+        Require(panel.SelectedItemId == null && !code.Visible && save.Disabled
+                && Find<Button>(panel, "ToolboxCreateChain").Visible
+                && !Find<Button>(panel, "ToolboxCreateTool").Visible,
+            "An empty chains tab must clear the tool editor and show chain creation.");
         Require(panel.SelectItem("resize-256"), "The built-in resize tool was not listed.");
+        Require(categoryTabs.CurrentTab == 0,
+            "Selecting a tool must activate its tools tab.");
         Require(code.Visible && !code.Editable
                 && code.Text.Contains("256×256", StringComparison.Ordinal)
                 && code.Text.Contains("没有可编辑的 GDScript 源码", StringComparison.Ordinal)
@@ -123,10 +141,31 @@ public partial class ToolboxPanelAcceptance : Node
 
         Create(panel, "ToolboxCreateChain", createDialog, createName, "组合工具");
         await Frame();
+        string draftChainId = panel.SelectedItemId ?? throw new Exception("Draft chain not selected.");
+        Require(categoryTabs.CurrentTab == 1 && !code.Visible,
+            "Creating a chain must activate the chain editor in its own tab.");
+        save.EmitSignal(BaseButton.SignalName.Pressed);
+        Require(catalog.ListChains().Count == 0 && panel.SelectedItemId == draftChainId,
+            "An empty chain must not be persisted.");
         var available = Find<OptionButton>(panel, "ToolboxAvailableTools");
         var addStep = Find<Button>(panel, "ToolboxAddStep");
         available.Select(FindOption(available, firstId));
         addStep.EmitSignal(BaseButton.SignalName.Pressed);
+        save.EmitSignal(BaseButton.SignalName.Pressed);
+        await Frame();
+        Require(catalog.LoadChain(draftChainId).ToolIds.SequenceEqual([firstId]),
+            "A single-step chain must be saved without requiring an unrelated second tool.");
+        Require(items.ItemCount == 10 && chains.ItemCount == 1
+                && chains.GetItemMetadata(0).AsString() == draftChainId,
+            "A saved chain must appear only in the chains list.");
+        categoryTabs.CurrentTab = 0;
+        await Frame();
+        Require(panel.SelectedItemId == secondId && code.Visible && code.Editable,
+            "Switching back to tools must restore the selected tool editor.");
+        categoryTabs.CurrentTab = 1;
+        await Frame();
+        Require(panel.SelectedItemId == draftChainId && !code.Visible,
+            "Switching to chains must restore the selected chain editor.");
         available.Select(FindOption(available, secondId));
         addStep.EmitSignal(BaseButton.SignalName.Pressed);
         save.EmitSignal(BaseButton.SignalName.Pressed);
@@ -146,16 +185,14 @@ public partial class ToolboxPanelAcceptance : Node
         Require(chain.ToolIds.SequenceEqual([secondId, firstId]),
             "Moving a chain step did not persist its new order.");
 
-        string? requestedId = null;
-        panel.RunRequested += id => requestedId = id;
-        Find<Button>(panel, "ToolboxRun").EmitSignal(BaseButton.SignalName.Pressed);
-        Require(requestedId == chainId, "Run did not emit the selected chain ID.");
-
         Find<Button>(panel, "ToolboxDelete").EmitSignal(BaseButton.SignalName.Pressed);
         Find<ConfirmationDialog>(panel, "ToolboxDeleteDialog")
             .EmitSignal(AcceptDialog.SignalName.Confirmed);
         await Frame();
         Require(catalog.ListChains().All(item => item.Id != chainId), "Deleting a chain did not remove it.");
+        Require(categoryTabs.CurrentTab == 1 && chains.ItemCount == 0
+                && panel.SelectedItemId == null && !code.Visible && save.Disabled,
+            "Deleting the last chain must leave its tab empty without selecting a tool.");
 
         Require(panel.SelectItem(firstId), "The custom tool disappeared after deleting its chain.");
         Find<Button>(panel, "ToolboxDelete").EmitSignal(BaseButton.SignalName.Pressed);
@@ -164,6 +201,8 @@ public partial class ToolboxPanelAcceptance : Node
         await Frame();
         Require(catalog.ListTools().All(item => item.Id != firstId),
             "Deleting a custom tool did not remove it.");
+        Require(categoryTabs.CurrentTab == 0 && chains.ItemCount == 0 && items.ItemCount == 9,
+            "Deleting a tool must keep the tool and chain lists separate.");
     }
 
     private static void Create(

@@ -220,7 +220,7 @@ internal sealed class MainWorkspaceProjectSessionController
     }
 
     /// <summary>
-    /// Exports one scene package ZIP under {project}/.agas/scene-exports/ (disk only, not clipboard).
+    /// Exports one scene package ZIP to the system Downloads directory.
     /// Returns the ZIP path on success so the UI can show a visible confirmation.
     /// </summary>
     internal ScenePackageExportResult ExportScenePackage(string? sceneId = null)
@@ -253,18 +253,24 @@ internal sealed class MainWorkspaceProjectSessionController
             return unavailable;
         }
 
-        ScenePackageExportResult exported = new ScenePackageStore().Export(root, scene);
+        string downloadsDirectory = Godot.OS.GetSystemDir(Godot.OS.SystemDir.Downloads);
+        if (string.IsNullOrWhiteSpace(downloadsDirectory))
+        {
+            ScenePackageExportResult unavailable = ScenePackageExportResult.Fail("导出失败：无法定位系统下载目录。");
+            _setStatus(unavailable.Message, true);
+            return unavailable;
+        }
+        ScenePackageExportResult exported = new ScenePackageStore().Export(root, scene, downloadsDirectory);
         if (!exported.Success)
         {
             _setStatus(exported.Message, true);
             return exported;
         }
 
-        // Refresh left files tree so .agas/scene-exports becomes visible immediately.
         _refreshManagementUi();
         string relativeHint = exported.PackagePath != null
             ? MakeProjectRelative(root, exported.PackagePath)
-            : ".agas/scene-exports/";
+            : downloadsDirectory;
         _setStatusTemplate("单个 ZIP 场景包已导出到 {0}", false, new object[] { relativeHint });
         return exported;
     }
@@ -309,13 +315,6 @@ internal sealed class MainWorkspaceProjectSessionController
 
         AgasSceneResource scene = imported.Scene;
         string relativePath = $".agas/scenes/{scene.Id}.tres";
-        AgasPersistenceResult saveScene = _repository.Save(scene, AgasPaths.SceneFile(root, scene.Id));
-        if (!saveScene.Success)
-        {
-            _setStatus(saveScene.ErrorMessage ?? "导入失败：无法保存场景文件。", true);
-            return;
-        }
-
         var index = new SceneIndexResource
         {
             Id = scene.Id,
@@ -330,9 +329,8 @@ internal sealed class MainWorkspaceProjectSessionController
         PresentScene(scene, scene.Id);
         _refreshManagementUi();
         bool importedFromZip = string.Equals(Path.GetExtension(packagePath), ".zip", StringComparison.OrdinalIgnoreCase);
-        string sourceKind = importedFromZip ? "ZIP 场景包" : "旧版 scene.json 场景包";
-        _markDirty($"已从 {sourceKind}导入场景：{scene.Name}", false);
-        _setStatus($"已从 {sourceKind}导入场景：{scene.Name}（参考图 {imported.CopiedRelativeImagePaths?.Count ?? 0} 张）", false);
+        _markDirtyTemplate(importedFromZip ? "已从 ZIP 场景包导入场景：{0}" : "已从旧版 scene.json 场景包导入场景：{0}", false, new object[] { scene.Name });
+        _setStatusTemplate(importedFromZip ? "已从 ZIP 场景包导入场景：{0}（图片 {1} 张）" : "已从旧版 scene.json 场景包导入场景：{0}（图片 {1} 张）", false, new object[] { scene.Name, imported.CopiedRelativeImagePaths?.Count ?? 0 });
     }
 
     internal void SwitchScene(string sceneId)

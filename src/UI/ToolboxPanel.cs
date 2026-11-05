@@ -23,10 +23,22 @@ public sealed partial class ToolboxPanel : Control
         SizeFlagsHorizontal = SizeFlags.ExpandFill,
         SizeFlagsVertical = SizeFlags.ExpandFill,
     };
+    private readonly ItemList _chains = new()
+    {
+        Name = "ToolboxChainItems",
+        SelectMode = ItemList.SelectModeEnum.Single,
+        SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        SizeFlagsVertical = SizeFlags.ExpandFill,
+    };
+    private readonly TabContainer _categoryTabs = new()
+    {
+        Name = "ToolboxCategoryTabs",
+        SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        SizeFlagsVertical = SizeFlags.ExpandFill,
+    };
     private readonly Button _createTool = new() { Name = "ToolboxCreateTool", Text = "+ 工具" };
     private readonly Button _createChain = new() { Name = "ToolboxCreateChain", Text = "+ 工具链" };
     private readonly Button _refresh = new() { Name = "ToolboxRefresh", Text = "刷新" };
-    private readonly Button _run = new() { Name = "ToolboxRun", Text = "运行" };
     private readonly Button _save = new() { Name = "ToolboxSave", Text = "保存" };
     private readonly Button _delete = new() { Name = "ToolboxDelete", Text = "删除" };
     private readonly LineEdit _name = new() { AutoTranslateMode = AutoTranslateModeEnum.Disabled, Name = "ToolboxItemName", SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -87,6 +99,8 @@ public sealed partial class ToolboxPanel : Control
     private IReadOnlyList<ToolDefinition> _toolItems = [];
     private IReadOnlyList<ToolChainDefinition> _chainItems = [];
     private string? _selectedId;
+    private string? _selectedToolId;
+    private string? _selectedChainId;
     private int _selectedRevision;
     private bool _creatingChain;
     private string _detailsKey = "未选择工具";
@@ -112,8 +126,6 @@ public sealed partial class ToolboxPanel : Control
         WireEvents();
         ShowNoSelection();
     }
-
-    public event Action<string>? RunRequested;
 
     public string? SelectedItemId => _selectedId;
 
@@ -146,6 +158,7 @@ public sealed partial class ToolboxPanel : Control
             _toolItems = _tools.ListTools();
             _chainItems = _tools.ListChains();
             _items.Clear();
+            _chains.Clear();
             foreach (ToolDefinition item in _toolItems)
             {
                 _items.AddItem(item.Name);
@@ -154,9 +167,12 @@ public sealed partial class ToolboxPanel : Control
             }
             foreach (ToolChainDefinition item in _chainItems)
             {
-                _items.AddItem($"{item.Name}  ·  工具链");
-                _items.SetItemMetadata(_items.ItemCount - 1, item.Id);
+                _chains.AddItem(item.Name);
+                _chains.SetItemAutoTranslateMode(_chains.ItemCount - 1, AutoTranslateModeEnum.Disabled);
+                _chains.SetItemMetadata(_chains.ItemCount - 1, item.Id);
             }
+            RestoreListSelection(_items, _selectedToolId);
+            RestoreListSelection(_chains, _selectedChainId);
 
             _availableTools.Clear();
             foreach (ToolDefinition item in _toolItems)
@@ -168,14 +184,7 @@ public sealed partial class ToolboxPanel : Control
 
             _createChain.Disabled = _availableTools.ItemCount == 0;
             if (previous != null && SelectItem(previous)) return;
-            if (_items.ItemCount > 0)
-            {
-                SelectItem(_items.GetItemMetadata(0).AsString());
-            }
-            else
-            {
-                ShowNoSelection();
-            }
+            ApplyCategorySelection();
             SetStatus(string.Empty);
         }
         catch (Exception error)
@@ -186,12 +195,26 @@ public sealed partial class ToolboxPanel : Control
 
     public bool SelectItem(string id)
     {
-        for (int index = 0; index < _items.ItemCount; index++)
+        for (int category = 0; category < 2; category++)
         {
-            if (_items.GetItemMetadata(index).AsString() != id) continue;
-            _items.Select(index);
-            ApplySelection(id);
-            return true;
+            ItemList items = category == 0 ? _items : _chains;
+            for (int index = 0; index < items.ItemCount; index++)
+            {
+                if (items.GetItemMetadata(index).AsString() != id) continue;
+                _loading = true;
+                try
+                {
+                    _categoryTabs.CurrentTab = category;
+                    items.Select(index);
+                }
+                finally
+                {
+                    _loading = false;
+                }
+                UpdateCategoryActions();
+                ApplySelection(id);
+                return true;
+            }
         }
         return false;
     }
@@ -241,7 +264,12 @@ public sealed partial class ToolboxPanel : Control
         directoryActions.AddChild(_createChain);
         directoryActions.AddChild(_refresh);
         directory.AddChild(directoryActions);
-        directory.AddChild(_items);
+        _categoryTabs.AddChild(_items);
+        _categoryTabs.SetTabTitle(0, "工具");
+        _categoryTabs.AddChild(_chains);
+        _categoryTabs.SetTabTitle(1, "工具链");
+        directory.AddChild(_categoryTabs);
+        UpdateCategoryActions();
         split.AddChild(directory);
 
         var editor = new VBoxContainer
@@ -254,7 +282,6 @@ public sealed partial class ToolboxPanel : Control
         var toolbar = new HFlowContainer { Name = "ToolboxEditorToolbar" };
         toolbar.AddChild(_name);
         toolbar.AddChild(_save);
-        toolbar.AddChild(_run);
         toolbar.AddChild(_delete);
         editor.AddChild(toolbar);
         editor.AddChild(_details);
@@ -312,11 +339,16 @@ public sealed partial class ToolboxPanel : Control
     private void WireEvents()
     {
         _items.ItemSelected += index => ApplySelection(_items.GetItemMetadata((int)index).AsString());
+        _chains.ItemSelected += index => ApplySelection(_chains.GetItemMetadata((int)index).AsString());
+        _categoryTabs.TabChanged += _ =>
+        {
+            UpdateCategoryActions();
+            if (!_loading) ApplyCategorySelection();
+        };
         _createTool.Pressed += () => OpenCreateDialog(false);
         _createChain.Pressed += () => OpenCreateDialog(true);
         _refresh.Pressed += RefreshTools;
         _save.Pressed += SaveSelection;
-        _run.Pressed += () => { if (_selectedId != null) RunRequested?.Invoke(_selectedId); };
         _delete.Pressed += () =>
         {
             if (_selectedId == null) return;
@@ -346,6 +378,37 @@ public sealed partial class ToolboxPanel : Control
         _steps.ItemSelected += _ => UpdateStepButtons();
     }
 
+    private void UpdateCategoryActions()
+    {
+        _createTool.Visible = _categoryTabs.CurrentTab == 0;
+        _createChain.Visible = _categoryTabs.CurrentTab == 1;
+    }
+
+    private void ApplyCategorySelection()
+    {
+        ItemList items = _categoryTabs.CurrentTab == 0 ? _items : _chains;
+        int[] selected = items.GetSelectedItems();
+        if (items.ItemCount == 0)
+        {
+            ShowNoSelection();
+            return;
+        }
+        int index = selected.Length > 0 ? selected[0] : 0;
+        items.Select(index);
+        ApplySelection(items.GetItemMetadata(index).AsString());
+    }
+
+    private static void RestoreListSelection(ItemList items, string? id)
+    {
+        if (id == null) return;
+        for (int index = 0; index < items.ItemCount; index++)
+        {
+            if (items.GetItemMetadata(index).AsString() != id) continue;
+            items.Select(index);
+            return;
+        }
+    }
+
     private void OpenCreateDialog(bool chain)
     {
         _creatingChain = chain;
@@ -369,7 +432,9 @@ public sealed partial class ToolboxPanel : Control
         {
             if (_creatingChain)
             {
-                // A new chain stays in the editor until it has at least two steps.
+                _categoryTabs.CurrentTab = 1;
+                _chains.DeselectAll();
+                // A new chain stays in the editor until it has a step.
                 _selectedId = id;
                 _selectedRevision = 0;
                 _name.Text = name;
@@ -379,10 +444,9 @@ public sealed partial class ToolboxPanel : Control
                 _chainEditor.Visible = true;
                 SetDetails("未保存的工具链");
                 _save.Disabled = false;
-                _run.Disabled = true;
                 _delete.Disabled = true;
                 RefreshSteps(-1);
-                SetStatus("添加至少两个工具后保存。");
+                SetStatus("添加至少一个工具后保存。");
             }
             else
             {
@@ -406,11 +470,12 @@ public sealed partial class ToolboxPanel : Control
         try
         {
             _selectedId = id;
+            if (tool != null) _selectedToolId = id;
+            else _selectedChainId = id;
             _selectedRevision = tool?.Revision ?? chain!.Revision;
             _name.Text = tool?.Name ?? chain!.Name;
             _name.Editable = tool?.IsReadOnly != true;
             _delete.Disabled = tool?.IsReadOnly == true;
-            _run.Disabled = false;
             _code.Visible = tool != null;
             _chainEditor.Visible = chain != null;
             _code.Editable = tool?.Kind == ToolImplementationKind.Gdscript && !tool.IsReadOnly;
@@ -456,9 +521,9 @@ public sealed partial class ToolboxPanel : Control
         {
             if (tool == null)
             {
-                if (_stepIds.Count < 2)
+                if (_stepIds.Count == 0)
                 {
-                    SetStatus("工具链至少需要两个工具。", true);
+                    SetStatus("工具链至少需要一个工具。", true);
                     return;
                 }
                 if (chain == null) _tools.CreateChain(_selectedId, name, _stepIds);
@@ -548,7 +613,6 @@ public sealed partial class ToolboxPanel : Control
         _code.Visible = false;
         _chainEditor.Visible = false;
         _save.Disabled = true;
-        _run.Disabled = true;
         _delete.Disabled = true;
     }
 

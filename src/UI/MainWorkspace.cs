@@ -554,10 +554,6 @@ public partial class MainWorkspace : Control
         {
             _canvasToolMenu.IdPressed -= OnCanvasToolMenuPressed;
         }
-        if (_toolboxPanel != null)
-        {
-            _toolboxPanel.RunRequested -= OnToolboxRunRequested;
-        }
         _canvasToolRunController.Invalidate();
         try
         {
@@ -662,10 +658,6 @@ public partial class MainWorkspace : Control
         _propertiesPanel = shell.PropertiesPanel;
         _promptPanel = shell.PromptPanel;
         _toolboxPanel = shell.ToolboxPanel;
-        if (_toolboxPanel != null)
-        {
-            _toolboxPanel.RunRequested += OnToolboxRunRequested;
-        }
         _aiGenerationPanel = shell.AiGenerationPanel;
         _canvas = shell.Canvas;
         _bottomTabs = shell.BottomTabs;
@@ -900,7 +892,10 @@ public partial class MainWorkspace : Control
 
     private void ShowCanvasAiContextMenuFromToolbar()
     {
-        _canvas?.RequestContextMenuAt(new Vector2(16, 16));
+        if (_bottomTabs == null || _toolboxPanel == null) return;
+        RefreshToolbox();
+        _dockChrome.SetBottomDockCollapsed(false, notify: true);
+        _bottomTabs.CurrentTab = _toolboxPanel.GetIndex();
     }
 
     private void EnsureCanvasAiContextMenu()
@@ -998,7 +993,9 @@ public partial class MainWorkspace : Control
         }
         if (_canvasToolSelections.Count == 0)
         {
-            _canvasToolMenu.AddItem("请先选中可编辑图片", 0);
+            _canvasToolMenu.AddItem(CaptureCanvasToolContext() is { CanMutate: true }
+                ? "尚无工具链，请先在工具箱组装"
+                : "请先选中可编辑图片", 0);
             _canvasToolMenu.SetItemDisabled(0, true);
         }
         if (_canvasToolRunning)
@@ -1016,26 +1013,6 @@ public partial class MainWorkspace : Control
             return;
         }
         RunImageTool(selection);
-    }
-
-    private void OnToolboxRunRequested(string toolId)
-    {
-        try
-        {
-            CanvasToolSelection? selection = _canvasToolRunController.ListAvailable()
-                .FirstOrDefault(candidate => candidate.Id == toolId);
-            if (selection == null)
-            {
-                SetStatus("请先选中可编辑图层中的图片，或刷新工具列表。", true);
-                return;
-            }
-            RunImageTool(selection);
-        }
-        catch (Exception exception)
-        {
-            GD.PushWarning($"Tool list failed: {exception}");
-            SetStatus($"工具列表读取失败：{ToolboxPanel.FormatErrorMessageForUi(exception.Message)}", true);
-        }
     }
 
     private void RunImageTool(CanvasToolSelection selection)
@@ -1072,6 +1049,7 @@ public partial class MainWorkspace : Control
     {
         object detail = ToolboxPanel.FormatErrorMessageForUi(result.Message);
         if ((result.Code, result.Message) is
+            (CanvasToolRunErrorCodes.ChainRequired, "请先把工具加入工具链，再从画布右键工具箱运行。") or
             (CanvasToolRunErrorCodes.ContextUnavailable, "请先选中可编辑图层中的图片。") or
             (CanvasToolRunErrorCodes.ToolChanged, "所选工具在执行期间发生变化，请刷新后重试。") or
             (CanvasToolRunErrorCodes.ContextStale, "执行期间项目、场景、图层或所选图片已变化，结果未应用。") or
@@ -1992,11 +1970,8 @@ public partial class MainWorkspace : Control
             : MakeDisplayRelativePath(_projectRoot, packagePath);
         ShowScenePackageNotice(
             "ZIP 场景包已导出",
-            "已导出为单个 ZIP 场景包。\n\n"
-            + $"文件：{relative}\n"
-            + "内容：scene.json + 各图层提示词 + 参考图文件\n\n"
-            + "导入时：场景列表右键 → 导入场景包… → 选择该 ZIP，程序会自动解压。",
-            packagePath);
+            "已导出为单个 ZIP 场景包。\n\n文件：{0}\n内容：共享图层 + 提示词 + 共享图层图片 + 工具和工具链（含自定义代码）\n\n导入时：场景列表右键 → 导入场景包… → 选择该 ZIP，程序会自动解压。",
+            packagePath, new object[] { relative });
     }
 
     private void ShowScenePackageNotice(string title, string message, string? packagePath, object[]? arguments = null)

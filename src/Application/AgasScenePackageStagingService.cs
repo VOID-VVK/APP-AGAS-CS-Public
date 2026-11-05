@@ -131,7 +131,8 @@ public sealed class AgasScenePackageStagingService
 
     public AgasMcpScenePackageExportCapture CaptureExport(
         AgasSceneResource scene,
-        string packageRef)
+        string packageRef,
+        AppAgasCs.Features.Tools.Storage.ToolCatalog? tools = null)
     {
         ArgumentNullException.ThrowIfNull(scene);
         if (!_guard.IsSafeReference(scene.Id) || !_guard.IsSafeReference(packageRef))
@@ -139,7 +140,10 @@ public sealed class AgasScenePackageStagingService
 
         try
         {
-            ScenePackageDocument source = ScenePackageCodec.FromScene(scene);
+            ScenePackageDocument source = ScenePackageCodec.FromScene(scene) with
+            {
+                Toolbox = (tools ?? new AppAgasCs.Features.Tools.Storage.ToolCatalog()).ExportSnapshot(),
+            };
             var files = new List<AgasScenePackageExportFile>();
             var layers = new List<ScenePackageLayer>();
             foreach (ScenePackageLayer packageLayer in source.Layers
@@ -239,6 +243,7 @@ public sealed class AgasScenePackageStagingService
                     Visible = packageLayer.Visible,
                     Locked = packageLayer.Locked,
                     Shared = packageLayer.Shared,
+                    AiStyleReference = packageLayer.AiStyleReference,
                 };
                 foreach (ScenePackagePromptFragment prompt in packageLayer.PromptFragments
                              .OrderBy(item => item.Order)
@@ -294,7 +299,11 @@ public sealed class AgasScenePackageStagingService
             }
             if (firstLayerId == null || scene.Layers.Count == 0)
                 return AgasScenePackagePreparedSceneResult.Fail(InvalidCode);
-            scene.ActiveLayerId = firstLayerId;
+            scene.ActiveLayerId = scene.Layers.FirstOrDefault(layer =>
+                string.Equals(layer.Id, document.ActiveLayerId, StringComparison.Ordinal))?.Id
+                ?? scene.Layers.FirstOrDefault(layer =>
+                    string.Equals(layer.Id, document.ActiveLayerId, StringComparison.OrdinalIgnoreCase))?.Id
+                ?? firstLayerId;
             return new AgasScenePackagePreparedSceneResult(true, string.Empty, scene);
         }
         catch

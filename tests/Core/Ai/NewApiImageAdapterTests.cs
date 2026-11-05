@@ -11,6 +11,7 @@ namespace AppAgasCs.Tests.Core.Ai;
 public sealed class NewApiImageAdapterTests
 {
     private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==");
+    private static readonly byte[] TemplatePng = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAen63NgAAAAASUVORK5CYII=");
     private static string DataUrl => "data:image/png;base64," + Convert.ToBase64String(Png);
 
     [Theory]
@@ -108,6 +109,111 @@ public sealed class NewApiImageAdapterTests
         Assert.Equal(Png, result.Bytes);
         Assert.Equal(referenceEdit ? AiGenerationEffectiveOperation.ReferenceEdit : AiGenerationEffectiveOperation.TextToImage, result.EffectiveOperation);
     }
+
+    [Fact]
+    public async Task Gemini_ReferenceEditSendsStyleThenTemplateAsSeparateChatImages()
+    {
+        int calls = 0;
+        using var handler = new Handler(async (message, token) =>
+        {
+            calls++;
+            Assert.Equal("/v1/chat/completions", message.RequestUri!.AbsolutePath);
+            using JsonDocument body = JsonDocument.Parse(await message.Content!.ReadAsStringAsync(token));
+            JsonElement content = body.RootElement.GetProperty("messages")[0].GetProperty("content");
+            Assert.Equal(3, content.GetArrayLength());
+            Assert.Equal("text", content[0].GetProperty("type").GetString());
+            Assert.Contains("1024x512 pixels; aspect ratio 2:1", content[0].GetProperty("text").GetString());
+            Assert.Equal("image_url", content[1].GetProperty("type").GetString());
+            Assert.Equal("image_url", content[2].GetProperty("type").GetString());
+            Assert.Equal(DataUrl, content[1].GetProperty("image_url").GetProperty("url").GetString());
+            Assert.Equal("data:image/png;base64," + Convert.ToBase64String(TemplatePng),
+                content[2].GetProperty("image_url").GetProperty("url").GetString());
+            return Chat("![result](" + DataUrl + ")");
+        });
+        using var client = new HttpClient(handler);
+
+        GeneratedImageData result = await Adapter().GenerateAsync(
+            Profile("gemini-image"), StyleAndTemplateRequest(), client, client, CancellationToken.None);
+
+        Assert.Equal(1, calls);
+        Assert.Equal(AiGenerationEffectiveOperation.ReferenceEdit, result.EffectiveOperation);
+    }
+
+    [Theory]
+    [InlineData("gpt-image-2", false)]
+    [InlineData("gpt-image-2.5-flare", false)]
+    [InlineData("gpt-image-2.5-sunburst", false)]
+    [InlineData("gpt-image-2.5-flare", true)]
+    public async Task GptReferenceEdit_SendsStyleThenTemplateAsSeparateMultipartImages(
+        string model, bool retryWithoutBackground)
+    {
+        int calls = 0;
+        using var handler = new Handler(async (message, token) =>
+        {
+            calls++;
+            Assert.Equal("/v1/images/edits", message.RequestUri!.AbsolutePath);
+            MultipartFormDataContent multipart = Assert.IsType<MultipartFormDataContent>(message.Content);
+            HttpContent[] images = multipart
+                .Where(part => part.Headers.ContentDisposition!.Name!.Trim('"') == "image[]")
+                .ToArray();
+            Assert.Equal(2, images.Length);
+            Assert.Equal(Png, await images[0].ReadAsByteArrayAsync(token));
+            Assert.Equal(TemplatePng, await images[1].ReadAsByteArrayAsync(token));
+            Assert.All(images, part => Assert.Equal("image/png", part.Headers.ContentType!.MediaType));
+            Assert.DoesNotContain(multipart, part => part.Headers.ContentDisposition!.Name!.Trim('"') == "mask");
+            if (retryWithoutBackground && calls == 1)
+                return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent("{\"error\":{\"message\":\"unknown parameter\"}}"),
+                };
+            return Json(new { data = new[] { new { b64_json = Convert.ToBase64String(Png) } } });
+        });
+        using var client = new HttpClient(handler);
+
+        GeneratedImageData result = await Adapter().GenerateAsync(
+            Profile(model), StyleAndTemplateRequest(), client, client, CancellationToken.None);
+
+        Assert.Equal(retryWithoutBackground ? 2 : 1, calls);
+        Assert.Equal(AiGenerationEffectiveOperation.ReferenceEdit, result.EffectiveOperation);
+    }
+
+    [Fact]
+    public async Task OpenAiCompatibleReferenceEdit_SendsStyleThenTemplateAsSeparateJsonImages()
+    {
+        int calls = 0;
+        using var handler = new Handler(async (message, token) =>
+        {
+            calls++;
+            Assert.Equal("/v1/images/edits", message.RequestUri!.AbsolutePath);
+            Assert.Equal("application/json", message.Content!.Headers.ContentType!.MediaType);
+            using JsonDocument body = JsonDocument.Parse(await message.Content.ReadAsStringAsync(token));
+            JsonElement images = body.RootElement.GetProperty("images");
+            Assert.Equal(2, images.GetArrayLength());
+            Assert.Equal(DataUrl, images[0].GetProperty("image_url").GetString());
+            Assert.Equal("data:image/png;base64," + Convert.ToBase64String(TemplatePng),
+                images[1].GetProperty("image_url").GetString());
+            Assert.False(body.RootElement.TryGetProperty("mask", out _));
+            return Json(new { data = new[] { new { b64_json = Convert.ToBase64String(Png) } } });
+        });
+        using var client = new HttpClient(handler);
+        var profile = new AiGenerationProviderProfile(
+            "compatible", "Compatible", "openai-compatible", "gpt-image-2", "test-key", "https://ainewdev.cc/v1");
+
+        GeneratedImageData result = await new OpenAiCompatibleImageAdapter().GenerateAsync(
+            profile, StyleAndTemplateRequest(), client, client, CancellationToken.None);
+
+        Assert.Equal(1, calls);
+        Assert.Equal(AiGenerationEffectiveOperation.ReferenceEdit, result.EffectiveOperation);
+    }
+
+    private static AiGenerationRequest StyleAndTemplateRequest() => new(
+        "/tmp/project", "Use the style reference to texture the layout template; output 1024x512.", 1024, 512,
+        referenceImages:
+        [
+            AiGenerationReferenceImage.Create(Png, "image/png"),
+            AiGenerationReferenceImage.Create(TemplatePng, "image/png"),
+        ],
+        operation: AiGenerationOperation.ReferenceEdit);
 
     [Fact]
     public async Task GptImageEdit_RetriesWithoutTransparentBackgroundWhenRelayReturns400()

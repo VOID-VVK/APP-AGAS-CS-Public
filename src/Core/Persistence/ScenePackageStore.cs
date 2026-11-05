@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using AppAgasCs.Application;
 using AppAgasCs.Core.Resources;
+using AppAgasCs.Features.Tools.Storage;
 
 namespace AppAgasCs.Core.Persistence;
 
@@ -31,7 +32,7 @@ public sealed record ScenePackageImportResult(
 }
 
 /// <summary>
-/// Manual scene package export/import under {project}/.agas/scene-exports/.
+/// Manual scene package export/import with an optional external export directory.
 /// Schema v2 carries ordinary images and file integrity;
 /// schema v1 remains import-compatible.
 /// </summary>
@@ -39,8 +40,11 @@ public sealed class ScenePackageStore
 {
     private readonly ScenePackagePathGuard _pathGuard = new();
     private readonly IScenePackageImageDecoder _imageDecoder = new GodotScenePackageImageDecoder();
+    private readonly ToolCatalog _tools;
 
-    public ScenePackageExportResult Export(string projectRoot, AgasSceneResource scene)
+    public ScenePackageStore(ToolCatalog? tools = null) => _tools = tools ?? new ToolCatalog();
+
+    public ScenePackageExportResult Export(string projectRoot, AgasSceneResource scene, string? exportDirectory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectRoot);
         ArgumentNullException.ThrowIfNull(scene);
@@ -52,9 +56,15 @@ public sealed class ScenePackageStore
             if (!Directory.Exists(root))
                 return ScenePackageExportResult.Fail("项目目录不存在。");
 
-            ScenePackageDocument source = ScenePackageCodec.FromScene(scene);
+            ScenePackageDocument source = ScenePackageCodec.FromScene(scene) with
+            {
+                Toolbox = _tools.ExportSnapshot(),
+            };
             string folderName = ScenePackageCodec.PackageFolderName(scene.Id, scene.Name);
-            string packagePath = AgasPaths.SceneExportPackageArchive(root, folderName);
+            string destinationDirectory = exportDirectory == null
+                ? AgasPaths.SceneExportsDirectory(root)
+                : Path.GetFullPath(exportDirectory);
+            string packagePath = Path.Combine(destinationDirectory, folderName + AgasPaths.ScenePackageArchiveExtension);
             Directory.CreateDirectory(Path.GetDirectoryName(packagePath)!);
             stagingDirectory = Path.Combine(
                 Path.GetDirectoryName(packagePath)!,
@@ -139,6 +149,8 @@ public sealed class ScenePackageStore
 
         string? stagingDirectory = null;
         string? extractedPackageDirectory = null;
+        string? importedImageDirectory = null;
+        string? importedScenePath = null;
         try
         {
             string root = Path.GetFullPath(projectRoot);
@@ -163,6 +175,18 @@ public sealed class ScenePackageStore
                 throw new IOException("导入场景的图片目录已存在。");
             Directory.Move(prepared.StagingDirectory, prepared.FinalImageDirectory);
             stagingDirectory = null;
+            importedImageDirectory = prepared.FinalImageDirectory;
+            if (!_pathGuard.TryResolveOwnedTarget(root, $".agas/scenes/{prepared.Scene.Id}.tres", out string scenePath))
+                throw new IOException("导入场景的文件路径不安全。");
+            if (File.Exists(scenePath) || Directory.Exists(scenePath))
+                throw new IOException("导入场景的文件已存在。");
+            AgasPersistenceResult saved = new AgasResourceRepository().Save(prepared.Scene, scenePath);
+            if (!saved.Success)
+                throw new IOException(saved.ErrorMessage ?? "无法保存导入场景。");
+            importedScenePath = scenePath;
+            if (document.Toolbox != null) _tools.ImportSnapshot(document.Toolbox);
+            importedImageDirectory = null;
+            importedScenePath = null;
             return ScenePackageImportResult.Ok(prepared.Scene, prepared.CopiedRelativeImagePaths);
         }
         catch (Exception exception)
@@ -172,6 +196,8 @@ public sealed class ScenePackageStore
         finally
         {
             DeleteDirectoryIfPresent(stagingDirectory);
+            DeleteDirectoryIfPresent(importedImageDirectory);
+            DeleteFileIfPresent(importedScenePath);
             DeleteDirectoryIfPresent(extractedPackageDirectory);
         }
     }
@@ -204,6 +230,9 @@ public sealed class ScenePackageStore
         if (bytes.Length == 0 || bytes.Length > ScenePackageSafetyLimits.MaximumImageBytes)
             throw new InvalidDataException($"图片文件大小无效：{projectRelativePath}");
         WritePackageFile(packageDirectory, packagePath, bytes);
+        ScenePackageImageInspector.Inspect(
+            Path.Combine(packageDirectory, packagePath.Replace('/', Path.DirectorySeparatorChar)),
+            Path.GetExtension(projectRelativePath), _imageDecoder);
         return ScenePackageIntegrity.Create(packagePath, bytes, type);
     }
 
@@ -264,7 +293,7 @@ public sealed class ScenePackageStore
         return result;
     }
 
-    private static PreparedScene PrepareScene(
+    private PreparedScene PrepareScene(
         string projectRoot,
         ScenePackageDocument document,
         IReadOnlyDictionary<string, byte[]> files)
@@ -275,7 +304,8 @@ public sealed class ScenePackageStore
         scene.Name = sceneName;
         scene.Layers.Clear();
 
-        string imageRoot = Path.Combine(projectRoot, "assets", "scene-imports");
+        if (!_pathGuard.TryResolveDirectory(projectRoot, "assets/scene-imports", mustExist: false, out string imageRoot))
+            throw new IOException("导入图片的目录路径不安全。");
         Directory.CreateDirectory(imageRoot);
         string stagingDirectory = Path.Combine(imageRoot, ".staging-" + Guid.NewGuid().ToString("N"));
         string finalDirectory = Path.Combine(imageRoot, sceneId);
@@ -283,7 +313,7 @@ public sealed class ScenePackageStore
 
         try
         {
-            var layerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var layerIds = new Dictionary<string, string>(StringComparer.Ordinal);
             var copiedPaths = new List<string>();
             double legacyReferenceX = 0;
 
@@ -299,6 +329,7 @@ public sealed class ScenePackageStore
                     Visible = packageLayer.Visible,
                     Locked = packageLayer.Locked,
                     Shared = packageLayer.Shared,
+                    AiStyleReference = packageLayer.AiStyleReference,
                 };
 
                 foreach (ScenePackagePromptFragment fragment in packageLayer.PromptFragments.OrderBy(item => item.Order))
@@ -365,7 +396,9 @@ public sealed class ScenePackageStore
             scene.ActiveLayerId = document.ActiveLayerId != null
                 && layerIds.TryGetValue(document.ActiveLayerId, out string? activeLayerId)
                     ? activeLayerId
-                    : scene.Layers.OrderBy(layer => layer.Order).First().Id;
+                    : layerIds.FirstOrDefault(pair => string.Equals(
+                        pair.Key, document.ActiveLayerId, StringComparison.OrdinalIgnoreCase)).Value
+                        ?? scene.Layers.OrderBy(layer => layer.Order).First().Id;
             return new PreparedScene(
                 scene,
                 stagingDirectory,

@@ -249,7 +249,7 @@ public partial class FilesScenesPanel : PanelContainer
         _scenesContextMenu.AddItem("导出场景包…", SceneContextExport);
         _scenesContextMenu.SetItemTooltip(
             _scenesContextMenu.GetItemIndex(SceneContextExport),
-            "导出为项目 .agas/scene-exports/ 下的单个 ZIP 文件");
+            "导出为系统下载目录下的 ZIP 文件（包含图片、工具和工具链代码）");
         _scenesContextMenu.AddItem("导入场景包…", SceneContextImport);
         _scenesContextMenu.SetItemTooltip(
             _scenesContextMenu.GetItemIndex(SceneContextImport),
@@ -469,11 +469,10 @@ public partial class FilesScenesPanel : PanelContainer
             case SceneContextImport:
                 if (_sceneImportDialog != null)
                 {
-                    if (!string.IsNullOrWhiteSpace(_projectRoot))
+                    string downloadsDirectory = OS.GetSystemDir(OS.SystemDir.Downloads);
+                    if (Directory.Exists(downloadsDirectory))
                     {
-                        string exportRoot = Path.Combine(_projectRoot, ".agas", "scene-exports");
-                        Directory.CreateDirectory(exportRoot);
-                        _sceneImportDialog.CurrentDir = exportRoot;
+                        _sceneImportDialog.CurrentDir = downloadsDirectory;
                     }
                     _sceneImportDialog.PopupCenteredClamped(new Vector2I(960, 640));
                 }

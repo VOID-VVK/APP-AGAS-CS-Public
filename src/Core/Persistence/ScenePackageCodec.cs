@@ -10,6 +10,8 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using AppAgasCs.Core.Resources;
+using AppAgasCs.Features.Tools.Model;
+using AppAgasCs.Features.Tools.Storage;
 
 namespace AppAgasCs.Core.Persistence;
 
@@ -24,7 +26,8 @@ public sealed record ScenePackageDocument(
     string Name,
     string? ActiveLayerId,
     IReadOnlyList<ScenePackageLayer> Layers,
-    IReadOnlyList<ScenePackageFileIntegrity>? Integrity = null);
+    IReadOnlyList<ScenePackageFileIntegrity>? Integrity = null,
+    ToolCatalogSnapshot? Toolbox = null);
 
 public sealed record ScenePackageLayer(
     string Id,
@@ -35,7 +38,8 @@ public sealed record ScenePackageLayer(
     IReadOnlyList<ScenePackagePromptFragment> PromptFragments,
     IReadOnlyList<ScenePackageReferenceImage> ReferenceImages,
     IReadOnlyList<ScenePackageImage>? Images = null,
-    bool Shared = false);
+    bool Shared = false,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool AiStyleReference = false);
 
 public sealed record ScenePackagePromptFragment(
     string Id,
@@ -59,7 +63,7 @@ public static class ScenePackageCodec
     public const int CurrentSchemaVersion = 2;
     public const string ReferencesDirectoryName = "references";
     public const string ImagesDirectoryName = "images";
-    public const int MaximumManifestBytes = 2 * 1024 * 1024;
+    public const int MaximumManifestBytes = (int)ScenePackageSafetyLimits.MaximumManifestBytes;
     public const int MaximumJsonDepth = 64;
 
     private static readonly JsonSerializerOptions LegacyJsonOptions = CreateJsonOptions(
@@ -126,7 +130,8 @@ public static class ScenePackageCodec
                             image.Opacity))
                         .ToArray()
                     : Array.Empty<ScenePackageImage>(),
-                layer.Shared))
+                layer.Shared,
+                layer.AiStyleReference))
             .ToArray();
 
         return new ScenePackageDocument(
@@ -202,6 +207,13 @@ public static class ScenePackageCodec
         if (document.Layers == null || document.Layers.Count == 0)
         {
             throw new InvalidDataException("场景包至少需要一个图层。");
+        }
+
+        if (document.Toolbox != null)
+        {
+            if (document.SchemaVersion == LegacySchemaVersion)
+                throw new InvalidDataException("schemaVersion 1 不能包含工具箱。");
+            ToolCatalog.ValidateSnapshot(document.Toolbox);
         }
 
         if (document.SchemaVersion == LegacySchemaVersion)

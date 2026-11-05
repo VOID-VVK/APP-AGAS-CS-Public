@@ -43,9 +43,15 @@ internal sealed class CanvasPatchCaptureService
         string resolvedTargetId = string.IsNullOrWhiteSpace(targetImageId)
             ? selectedImageId ?? string.Empty
             : targetImageId.Trim();
+        ImageInstanceResource? styleReference = CanvasStyleReferenceCapture.Resolve(
+            scene, generationMode, layerScope, currentLayerId);
         List<CanvasCompositeItem> items = new();
         foreach (AgasLayerResource layer in scene.Layers.OrderBy(layer => layer.Order))
         {
+            // A style attachment is never painted into the layout. Existing results
+            // on the destination layer must not obscure the template on repeat runs.
+            if (styleReference != null && (layer.AiStyleReference || layer.Id == currentLayerId))
+                continue;
             if (!layer.Visible)
             {
                 continue;
@@ -82,13 +88,16 @@ internal sealed class CanvasPatchCaptureService
             }
         }
 
-        return CanvasCompositeRenderer.Capture(new CanvasPatchCaptureRequest(
+        CanvasPatchCapture capture = CanvasCompositeRenderer.Capture(new CanvasPatchCaptureRequest(
             referenceRegion,
             replacementRegion,
             gridSizePx,
             items,
             resolvedTargetId,
             generationMode));
+        return styleReference == null
+            ? capture
+            : CanvasStyleReferenceCapture.Attach(capture, LoadPng(projectRoot, styleReference));
     }
 
     private byte[] LoadPng(string projectRoot, ImageInstanceResource imageInstance)

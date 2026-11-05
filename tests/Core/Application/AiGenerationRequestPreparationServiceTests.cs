@@ -12,6 +12,30 @@ public sealed class AiGenerationRequestPreparationServiceTests
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAen63NgAAAAASUVORK5CYII=");
 
     [Fact]
+    public void StyleReference_IsFirstAndTemplateIsSecond_WithoutChangingOutputSize()
+    {
+        byte[] style = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==");
+        var capture = new CanvasPatchCapture(
+            new CanvasGridRegion(0, 0, 16, 8), new CanvasGridRegion(0, 0, 16, 8), 64,
+            new Rect2I(0, 0, 1024, 512), new Rect2I(0, 0, 1024, 512), new Rect2I(0, 0, 1024, 512),
+            TransparentPng, TransparentPng, TransparentPng, "fingerprint", null,
+            CanvasPatchGenerationMode.FullRegionGeneration, style);
+        AiGenerationPreparationResult result = new AiGenerationRequestPreparationService().Prepare(
+            Input(AiGenerationAdapterCapabilities.ReferenceEdit), capture);
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(2, result.Request!.ReferenceImages.Count);
+        Assert.Equal(style, result.Request.ReferenceImages[0].Bytes);
+        Assert.Equal(TransparentPng, result.Request.ReferenceImages[1].Bytes);
+        Assert.Equal(1024, result.Request.Width);
+        Assert.Equal(512, result.Request.Height);
+
+        AiGenerationPreparationResult rejected = new AiGenerationRequestPreparationService().Prepare(
+            Input(AiGenerationAdapterCapabilities.TextToImage), capture);
+        Assert.False(rejected.Success);
+        Assert.Contains("不支持图片参考", rejected.Message);
+    }
+
+    [Fact]
     public void FullRegionGeneration_TextOnlyModelBecomesTextToImageWithoutReference()
     {
         AiGenerationPreparationResult result = new AiGenerationRequestPreparationService().Prepare(

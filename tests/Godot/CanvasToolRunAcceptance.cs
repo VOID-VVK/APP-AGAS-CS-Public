@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using AGAS.UI;
+using AGAS.UI.Controllers;
 using Agas.Features.Canvas;
 using AppAgasCs.Core.Persistence;
 using AppAgasCs.Core.Resources;
@@ -60,12 +61,22 @@ public partial class CanvasToolRunAcceptance : Node
         }
 
         var tools = new ToolCatalog();
-        const string passThrough = "extends RefCounted\nfunc process(image: Image) -> Dictionary:\n    return {\"image\": image.duplicate()}\n";
-        tools.CreateTool("canvas_tool_a", "测试工具 A", passThrough);
-        tools.CreateTool("canvas_tool_b", "测试工具 B", passThrough);
+        const string incrementRed = "extends RefCounted\nfunc process(image: Image) -> Dictionary:\n    var result = image.duplicate()\n    var pixel = result.get_pixel(0, 0)\n    pixel.r += 0.1\n    result.set_pixel(0, 0, pixel)\n    return {\"image\": result}\n";
+        const string incrementGreen = "extends RefCounted\nfunc process(image: Image) -> Dictionary:\n    var result = image.duplicate()\n    var pixel = result.get_pixel(0, 0)\n    pixel.g += 0.1\n    result.set_pixel(0, 0, pixel)\n    return {\"image\": result}\n";
+        tools.CreateTool("canvas_tool_a", "测试工具 A", incrementRed);
+        tools.CreateTool("canvas_tool_b", "测试工具 B", incrementGreen);
         tools.CreateTool("canvas_fail", "测试失败工具",
             "extends RefCounted\nfunc process(_image: Image) -> Dictionary:\n    return {\"error\": \"intentional failure\"}\n");
-        tools.CreateChain("canvas_chain", "测试工具链", ["canvas_tool_a", "canvas_tool_b"]);
+
+        bool appliedSingleTool = false;
+        var guardController = new CanvasToolRunController(
+            () => null,
+            (_, _) => appliedSingleTool = true,
+            tools);
+        CanvasToolRunResult blocked = guardController.Run(
+            new CanvasToolSelection("canvas_tool_a", "测试工具 A", false, 1));
+        Require(!blocked.Success && blocked.Code == CanvasToolRunErrorCodes.ChainRequired && !appliedSingleTool,
+            "The canvas controller must reject single-tool dispatch before execution.");
 
         var workspace = new MainWorkspace { CustomMinimumSize = new Vector2(1100, 720) };
         AddChild(workspace);
@@ -92,38 +103,72 @@ public partial class CanvasToolRunAcceptance : Node
         Require(Enumerable.Range(0, rootMenu.ItemCount).Any(index => rootMenu.GetItemText(index) == "工具箱"),
             "Canvas context menu did not offer the toolbox.");
         string[] names = Enumerable.Range(0, menu.ItemCount).Select(menu.GetItemText).ToArray();
-        Require(names.Contains("测试工具 A") && names.Any(name => name.Contains("测试工具链", StringComparison.Ordinal)),
-            "Tool and chain were not listed in the context menu.");
+        Require(names.Length == 1 && menu.IsItemDisabled(0)
+                && names[0].Contains("尚无工具链", StringComparison.Ordinal),
+            "The empty chain menu must be disabled and must not list individual tools.");
+        rootMenu.Hide();
+        ToolboxPanel toolbox = FindRequired<ToolboxPanel>(workspace, "ToolboxPanel");
+        FindRequired<Button>(workspace, "CanvasToolboxMenuButton").EmitSignal(BaseButton.SignalName.Pressed);
+        await Frames(2);
+        Require(!rootMenu.Visible && toolbox.IsVisibleInTree()
+                && FindRequired<TabContainer>(workspace, "BottomDockTabs").CurrentTab == toolbox.GetIndex(),
+            $"The toolbar toolbox action must open management without offering execution (menu={rootMenu.Visible}, toolbox={toolbox.IsVisibleInTree()}, current={FindRequired<TabContainer>(workspace, "BottomDockTabs").CurrentTab}, expected={toolbox.GetIndex()}).");
+        Require(toolbox.FindChild("ToolboxRun", recursive: true, owned: false) == null,
+            "The toolbox management panel must not expose an execution button.");
 
-        int toolIndex = Array.IndexOf(names, "测试工具 A");
+        tools.CreateChain("canvas_single_chain", "测试单步工具链", ["canvas_tool_a"]);
+        tools.CreateChain("canvas_chain", "测试工具链", ["canvas_tool_a", "canvas_tool_b", "canvas_tool_a"]);
+        tools.CreateChain("canvas_fail_chain", "测试失败工具链", ["canvas_fail"]);
+        await OpenMenu(canvas);
+        names = Enumerable.Range(0, menu.ItemCount).Select(menu.GetItemText).ToArray();
+        Require(names.Length == 3 && !names.Contains("测试工具 A") && !names.Contains("测试工具 B")
+                && !names.Contains("测试失败工具") && names.Contains("测试工具链"),
+            "Only user-assembled tool chains must appear in the canvas toolbox menu.");
+
+        int toolIndex = Array.IndexOf(names, "测试单步工具链");
         menu.EmitSignal(PopupMenu.SignalName.IdPressed, (long)menu.GetItemId(toolIndex));
         await WaitUntil(() => layer.Images.Count == 2);
         ImageInstanceResource firstOutput = layer.Images.Single(item => item.Id != source.Id);
         Require(source.ImagePath == "assets/selected.png" && firstOutput.Y > source.Y,
             "Tool run replaced its input or did not place output below it.");
-        Require(firstOutput.ImagePath.StartsWith("agas/tools/", StringComparison.Ordinal),
-            "Tool output was not saved under agas/tools.");
+        Require(firstOutput.ImagePath == "agas/tools/Tools 1.png",
+            "The first tool output must use the shared Tools 1.png sequence.");
         Require(File.Exists(Path.Combine(projectRoot, firstOutput.ImagePath)),
             "Tool output PNG was not saved.");
+        using (Image singleResult = Image.LoadFromFile(Path.Combine(projectRoot, firstOutput.ImagePath)))
+        {
+            Color pixel = singleResult.GetPixel(0, 0);
+            Require(Mathf.Abs(pixel.R - Colors.CornflowerBlue.R - 0.1f) < 0.01f
+                    && Mathf.Abs(pixel.G - Colors.CornflowerBlue.G) < 0.01f,
+                "The single-step chain did not execute exactly its selected tool.");
+        }
 
         Require(canvas.TrySelectImage(source.Id), "Could not reselect source image for the chain run.");
-        ToolboxPanel toolbox = FindRequired<ToolboxPanel>(workspace, "ToolboxPanel");
-        Require(toolbox.SelectItem("canvas_chain"), "Chain was missing from the bottom toolbox.");
-        FindRequired<Button>(toolbox, "ToolboxRun").EmitSignal(BaseButton.SignalName.Pressed);
+        await OpenMenu(canvas);
+        int chainIndex = Enumerable.Range(0, menu.ItemCount).Single(index => menu.GetItemText(index) == "测试工具链");
+        menu.EmitSignal(PopupMenu.SignalName.IdPressed, (long)menu.GetItemId(chainIndex));
         await WaitUntil(() => layer.Images.Count == 3);
         ImageInstanceResource chainOutput = layer.Images.Single(item =>
             item.Id != source.Id && item.Id != firstOutput.Id);
-        Require(chainOutput.ImagePath.StartsWith("agas/tools/", StringComparison.Ordinal),
-            "Tool-chain output was not saved under agas/tools.");
+        Require(chainOutput.ImagePath == "agas/tools/Tools 2.png",
+            "A different tool chain must continue the same Tools sequence.");
         Require(File.Exists(Path.Combine(projectRoot, chainOutput.ImagePath)),
             "Chain output PNG was not saved.");
+        using (Image repeatedResult = Image.LoadFromFile(Path.Combine(projectRoot, chainOutput.ImagePath)))
+        {
+            Color pixel = repeatedResult.GetPixel(0, 0);
+            Require(Mathf.Abs(pixel.R - Colors.CornflowerBlue.R - 0.2f) < 0.01f
+                    && Mathf.Abs(pixel.G - Colors.CornflowerBlue.G - 0.1f) < 0.01f,
+                "The repeated-step chain must execute each occurrence and preserve separate tool effects.");
+        }
 
         Require(canvas.Undo() && layer.Images.Count == 2, "Chain output was not one undo step.");
         Require(canvas.Redo() && layer.Images.Count == 3, "Chain output could not be redone.");
         Require(canvas.TrySelectImage(source.Id), "Could not reselect source image for failure check.");
         string[] filesBeforeFailure = Directory.GetFiles(Path.Combine(projectRoot, "agas", "tools"), "*.png");
-        Require(toolbox.SelectItem("canvas_fail"), "Failing tool was missing from the toolbox.");
-        FindRequired<Button>(toolbox, "ToolboxRun").EmitSignal(BaseButton.SignalName.Pressed);
+        await OpenMenu(canvas);
+        int failIndex = Enumerable.Range(0, menu.ItemCount).Single(index => menu.GetItemText(index) == "测试失败工具链");
+        menu.EmitSignal(PopupMenu.SignalName.IdPressed, (long)menu.GetItemId(failIndex));
         await Frames(2);
         Require(layer.Images.Count == 3
                 && Directory.GetFiles(Path.Combine(projectRoot, "agas", "tools"), "*.png").Length == filesBeforeFailure.Length,
@@ -153,7 +198,31 @@ public partial class CanvasToolRunAcceptance : Node
         Require(persisted.Single(item => item.Id == firstOutputId).ImagePath == firstOutputPath
                 && persisted.Single(item => item.Id == chainOutputId).ImagePath == chainOutputPath,
             "Generated image paths changed after reopen.");
+        CanvasWorkspace reopenedCanvas = FindRequired<CanvasWorkspace>(reopened, "CanvasWorkspaceHost");
+        Require(reopenedCanvas.TrySelectImage(sourceId), "Could not reselect source after reopening.");
+        await OpenMenu(reopenedCanvas);
+        PopupMenu reopenedMenu = FindRequired<PopupMenu>(reopened, "CanvasToolMenu");
+        int reopenedChain = Enumerable.Range(0, reopenedMenu.ItemCount)
+            .Single(index => reopenedMenu.GetItemText(index) == "测试单步工具链");
+        reopenedMenu.EmitSignal(PopupMenu.SignalName.IdPressed, (long)reopenedMenu.GetItemId(reopenedChain));
+        await WaitUntil(() => reopened.CurrentScene!.LayersSnapshot.SelectMany(item => item.ImagesSnapshot)
+            .Any(item => item.ImagePath == "agas/tools/Tools 3.png"));
+        Require(File.Exists(Path.Combine(projectRoot, "agas/tools/Tools 3.png")),
+            "Reopening the project must continue at Tools 3 without reusing an existing filename.");
+        Require(Directory.GetFiles(Path.Combine(projectRoot, "agas/tools"), "*.reserve").Length == 0,
+            "Successful and failed runs must release their numbering reservations.");
         reopened.QueueFree();
+        await Frames(2);
+    }
+
+    private async Task OpenMenu(CanvasWorkspace canvas)
+    {
+        canvas._GuiInput(new InputEventMouseButton
+        {
+            ButtonIndex = MouseButton.Right,
+            Pressed = true,
+            Position = new Vector2(160, 120),
+        });
         await Frames(2);
     }
 

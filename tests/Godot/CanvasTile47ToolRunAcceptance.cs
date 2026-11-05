@@ -54,6 +54,9 @@ public partial class CanvasTile47ToolRunAcceptance : Node
         string inputPath = Path.Combine(projectRoot, "assets", "template-16x8.png");
         using (Image fixture = CreateFixture())
             Require(fixture.SavePng(inputPath) == Error.Ok, "Fixture PNG save failed.");
+        var tools = new ToolCatalog();
+        const string chainName = "标准反推工具链";
+        tools.CreateChain("tile47-reverse-chain", chainName, ["tile47-standard-reverse"]);
 
         var workspace = new MainWorkspace { CustomMinimumSize = new Vector2(1200, 760) };
         AddChild(workspace);
@@ -77,9 +80,8 @@ public partial class CanvasTile47ToolRunAcceptance : Node
         PopupMenu rootMenu = FindRequired<PopupMenu>(workspace, "CanvasAiContextMenu");
         PopupMenu toolMenu = FindRequired<PopupMenu>(rootMenu, "CanvasToolMenu");
         Require(rootMenu.Visible, "Right-click did not display the canvas menu.");
-        string toolName = new ToolCatalog().LoadTool("tile47-standard-reverse").Name;
         int index = Enumerable.Range(0, toolMenu.ItemCount)
-            .Single(item => toolMenu.GetItemText(item) == toolName);
+            .Single(item => toolMenu.GetItemText(item) == chainName);
         toolMenu.EmitSignal(PopupMenu.SignalName.IdPressed, (long)toolMenu.GetItemId(index));
 
         Label status = FindRequired<Label>(workspace, "SaveStatusLabel");

@@ -695,7 +695,7 @@ internal sealed class MainWorkspaceShellBuilder
         row.AddChild(CreateCanvasViewButton(
             "CanvasToolboxMenuButton",
             "工具箱",
-            "打开所选图片可运行的工具菜单（也可在图片上点击右键）",
+            "打开工具和工具链管理",
             _host.ShowCanvasAiContextMenuFromToolbar));
         row.AddChild(CreateToolbarGroupSeparator("CanvasToolsSelectionSeparator"));
 

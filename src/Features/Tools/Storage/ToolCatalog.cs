@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AppAgasCs.Features.Tools.Execution;
@@ -41,6 +43,121 @@ public sealed class ToolCatalog
 
     public string RootDirectory { get; }
     public string DocumentPath { get; }
+
+    public ToolCatalogSnapshot ExportSnapshot()
+    {
+        lock (_gate)
+        {
+            CatalogDocument document = Read();
+            return new ToolCatalogSnapshot(
+                Array.AsReadOnly(document.Tools.Select(Copy).ToArray()),
+                Array.AsReadOnly(document.Chains.Select(Copy).ToArray()));
+        }
+    }
+
+    public static void ValidateSnapshot(ToolCatalogSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (snapshot.Tools == null || snapshot.Chains == null)
+            throw new InvalidDataException("Tool snapshot collections are required.");
+        var document = new CatalogDocument
+        {
+            Tools = snapshot.Tools.ToList(),
+            Chains = snapshot.Chains.ToList(),
+        };
+        ValidateDocument(document);
+        if (Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(document, JsonOptions)) > MaxDocumentBytes)
+            throw new InvalidDataException("Tool catalog exceeds the size limit.");
+    }
+
+    /// <summary>Merge without replacing local definitions. Conflicting IDs are remapped together with chain steps.</summary>
+    public IReadOnlyDictionary<string, string> ImportSnapshot(ToolCatalogSnapshot snapshot)
+    {
+        ValidateSnapshot(snapshot);
+        lock (_gate)
+        {
+            CatalogDocument document = Read();
+            var mapping = new Dictionary<string, string>(StringComparer.Ordinal);
+            var sourceIds = snapshot.Tools.Select(tool => tool.Id)
+                .Concat(snapshot.Chains.Select(chain => chain.Id)).ToHashSet(StringComparer.Ordinal);
+            foreach (ToolDefinition tool in snapshot.Tools)
+            {
+                string id = tool.Id;
+                if (ContainsId(document, id))
+                {
+                    ToolDefinition? equivalent = document.Tools.FirstOrDefault(existing =>
+                        (existing.Id == tool.Id || IsImportedId(existing.Id, tool.Id, sourceIds)) &&
+                        Equivalent(existing, tool with { Id = existing.Id }));
+                    if (equivalent != null)
+                    {
+                        mapping.Add(tool.Id, equivalent.Id);
+                        continue;
+                    }
+                    id = AvailableImportId(document, tool.Id, sourceIds);
+                }
+                document.Tools.Add(Copy(tool with { Id = id }));
+                mapping.Add(tool.Id, id);
+            }
+            foreach (ToolChainDefinition chain in snapshot.Chains)
+            {
+                ToolChainDefinition imported = Copy(chain with
+                {
+                    ToolIds = chain.ToolIds.Select(id => mapping[id]).ToArray(),
+                });
+                if (ContainsId(document, chain.Id))
+                {
+                    ToolChainDefinition? equivalent = document.Chains.FirstOrDefault(existing =>
+                        (existing.Id == chain.Id || IsImportedId(existing.Id, chain.Id, sourceIds)) &&
+                        existing.Name == imported.Name && existing.Revision == imported.Revision
+                        && existing.ToolIds.SequenceEqual(imported.ToolIds, StringComparer.Ordinal));
+                    if (equivalent != null)
+                    {
+                        mapping.Add(chain.Id, equivalent.Id);
+                        continue;
+                    }
+                    imported = imported with { Id = AvailableImportId(document, chain.Id, sourceIds) };
+                }
+                document.Chains.Add(imported);
+                mapping.Add(chain.Id, imported.Id);
+            }
+            Write(document);
+            return new ReadOnlyDictionary<string, string>(mapping);
+        }
+    }
+
+    private static bool Equivalent(ToolDefinition left, ToolDefinition right) =>
+        left.Id == right.Id && left.Name == right.Name && left.Revision == right.Revision
+        && left.IsReadOnly == right.IsReadOnly && left.Kind == right.Kind
+        && left.OperationId == right.OperationId && left.Source == right.Source
+        && left.Parameters.Count == right.Parameters.Count
+        && left.Parameters.All(item => right.Parameters.TryGetValue(item.Key, out string? value) && item.Value == value);
+
+    private static bool ContainsId(CatalogDocument document, string id) =>
+        document.Tools.Any(tool => tool.Id == id) || document.Chains.Any(chain => chain.Id == id);
+
+    private static string ImportIdPrefix(string original)
+    {
+        string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(original)))[..16].ToLowerInvariant();
+        return $"{original[..Math.Min(original.Length, 24)]}-import-{hash}-";
+    }
+
+    private static bool IsImportedId(string candidate, string original, HashSet<string> sourceIds)
+    {
+        if (sourceIds.Contains(candidate)) return false;
+        string prefix = ImportIdPrefix(original);
+        return candidate.StartsWith(prefix, StringComparison.Ordinal)
+            && int.TryParse(candidate.AsSpan(prefix.Length), out int index) && index > 0;
+    }
+
+    private static string AvailableImportId(CatalogDocument document, string original, HashSet<string> sourceIds)
+    {
+        string prefix = ImportIdPrefix(original);
+        for (int index = 1; ; index++)
+        {
+            string candidate = $"{prefix}{index}";
+            if (!ContainsId(document, candidate) && !sourceIds.Contains(candidate)) return candidate;
+        }
+    }
 
     public IReadOnlyList<ToolDefinition> ListTools()
     {
@@ -349,8 +466,8 @@ public sealed class ToolCatalog
     private static void ValidateSteps(CatalogDocument document, IReadOnlyList<string> toolIds)
     {
         ArgumentNullException.ThrowIfNull(toolIds);
-        if (toolIds.Count is < 2 or > MaxChainSteps)
-            throw new ArgumentOutOfRangeException(nameof(toolIds), "A chain needs 2 to 32 tools.");
+        if (toolIds.Count is < 1 or > MaxChainSteps)
+            throw new ArgumentOutOfRangeException(nameof(toolIds), "A chain needs 1 to 32 tools.");
         foreach (string id in toolIds)
         {
             ValidateId(id);

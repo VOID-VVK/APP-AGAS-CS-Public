@@ -110,6 +110,10 @@ internal sealed class MainWorkspaceAiApplicationController
                 targetImageId, input.Context.LayerScope, input.Context.LayerId, effective);
             return _requestPreparation.Prepare(input, capture);
         }
+        catch (CanvasStyleReferenceException exception)
+        {
+            return AiGenerationPreparationResult.Fail(exception.Message);
+        }
         catch (Exception exception)
         {
             GD.PushWarning($"Failed to prepare AI canvas patch: {exception.GetType().Name}");

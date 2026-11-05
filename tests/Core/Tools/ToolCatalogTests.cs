@@ -88,6 +88,20 @@ public sealed class ToolCatalogTests : IDisposable
     }
 
     [Fact]
+    public void SingleStepChainsPersistAndEmptyChainsAreRejected()
+    {
+        var catalog = new ToolCatalog(_home);
+        ToolChainDefinition chain = catalog.CreateChain("single", "单步链", ["resize-256"]);
+
+        Assert.Equal(new[] { "resize-256" }, new ToolCatalog(_home).LoadChain(chain.Id).ToolIds);
+        Assert.Throws<ArgumentOutOfRangeException>(() => catalog.CreateChain("empty", "空链", []));
+        Assert.Throws<ArgumentOutOfRangeException>(() => catalog.UpdateChain(chain.Id, chain.Revision, "空链", []));
+
+        catalog.UpdateChain(chain.Id, chain.Revision, "修改单步链", ["crop-128"]);
+        Assert.Equal(new[] { "crop-128" }, new ToolCatalog(_home).LoadChain(chain.Id).ToolIds);
+    }
+
+    [Fact]
     public void ReferencedToolMustBeRemovedFromChainsBeforeDeletion()
     {
         var catalog = new ToolCatalog(_home);

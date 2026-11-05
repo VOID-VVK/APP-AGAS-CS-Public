@@ -49,12 +49,12 @@ public sealed class AgasScenePackageStagingTests
     }
 
     [Fact]
-    public void PrepareImport_RejectsManifestOverOneMiB()
+    public void PrepareImport_RejectsManifestOverByteBudget()
     {
         using var fixture = new Fixture();
         string directory = fixture.PackageDirectory("large");
         Directory.CreateDirectory(directory);
-        File.WriteAllBytes(Path.Combine(directory, "scene.json"), new byte[1024 * 1024 + 1]);
+        File.WriteAllBytes(Path.Combine(directory, "scene.json"), new byte[ScenePackageSafetyLimits.MaximumManifestBytes + 1]);
 
         AgasScenePackagePreparedImport result = fixture.Service.PrepareImport(
             fixture.AgasHome, fixture.ProjectRoot, "large", "scene-new");
@@ -107,7 +107,7 @@ public sealed class AgasScenePackageStagingTests
         Assert.Equal(32L * 1024 * 1024, ScenePackageSafetyLimits.MaximumImageBytes);
         Assert.Equal(8192, ScenePackageSafetyLimits.MaximumImageDimension);
         Assert.Equal(64_000_000, ScenePackageSafetyLimits.MaximumDecodedPixels);
-        Assert.Equal(1L * 1024 * 1024, ScenePackageSafetyLimits.MaximumManifestBytes);
+        Assert.Equal(10L * 1024 * 1024, ScenePackageSafetyLimits.MaximumManifestBytes);
         Assert.Equal(128L * 1024 * 1024, ScenePackageSafetyLimits.MaximumPackagePayloadBytes);
         Assert.Equal(64, ScenePackageSafetyLimits.MaximumManifestDepth);
         Assert.Equal(256, ScenePackageSafetyLimits.MaximumLayers);

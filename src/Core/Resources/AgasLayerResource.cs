@@ -16,6 +16,7 @@ public partial class AgasLayerResource : Resource
     [Export] public bool Visible { get; set; } = true;
     [Export] public bool Locked { get; set; } = false;
     [Export] public bool Shared { get; set; } = false;
+    [Export] public bool AiStyleReference { get; set; } = false;
     [Export] internal Array<ImageInstanceResource> Images { get; set; } = new();
     [Export] internal Array<PromptFragmentResource> PromptFragments { get; set; } = new();
 

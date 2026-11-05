@@ -17,7 +17,8 @@ public static class ScenePackageSafetyLimits
     public const long MaximumImageBytes = 32L * 1024 * 1024;
     public const int MaximumImageDimension = 8192;
     public const long MaximumDecodedPixels = 64_000_000;
-    public const long MaximumManifestBytes = 1L * 1024 * 1024;
+    // A scene includes up to 8 MiB of portable tool definitions and custom script source.
+    public const long MaximumManifestBytes = 10L * 1024 * 1024;
     public const long MaximumPackagePayloadBytes = 128L * 1024 * 1024;
     public const int MaximumManifestDepth = 64;
     public const int MaximumLayers = 256;

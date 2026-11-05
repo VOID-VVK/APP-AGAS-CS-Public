@@ -28,6 +28,9 @@ public sealed class AiGenerationRequestPreparationService : IAiGenerationRequest
         AiGenerationQuality? quality = AiGenerationQualityPolicy.Resolve(input.Profile.ModelName, input.Quality);
 
         AiGenerationAdapterCapabilities? capabilities = input.Profile.DeclaredCapabilities;
+        byte[]? styleReference = capture.StyleReferencePng;
+        if (styleReference != null && capture.GenerationMode != CanvasPatchGenerationMode.FullRegionGeneration)
+            return AiGenerationPreparationResult.Fail("双图生成不支持 W 局部编辑，请只用 Q 框选模板范围。");
         AiGenerationRequest request;
         if (capture.GenerationMode == CanvasPatchGenerationMode.FullRegionGeneration)
         {
@@ -36,6 +39,8 @@ public sealed class AiGenerationRequestPreparationService : IAiGenerationRequest
                 || capabilities.Value.HasFlag(AiGenerationAdapterCapabilities.ReferenceEdit);
             bool supportsTextToImage = !capabilities.HasValue
                 || capabilities.Value.HasFlag(AiGenerationAdapterCapabilities.TextToImage);
+            if (styleReference != null && !supportsReferenceEdit)
+                return AiGenerationPreparationResult.Fail("当前模型不支持图片参考，不能发送画风和模板两张图片。请切换支持参考图的模型。");
             if (!supportsReferenceEdit && !supportsTextToImage)
             {
                 return AiGenerationPreparationResult.Fail("当前模型不支持完整 Q 区域生图。");
@@ -44,10 +49,11 @@ public sealed class AiGenerationRequestPreparationService : IAiGenerationRequest
             AiGenerationOperation operation = AiGenerationOperation.TextToImage;
             if (supportsReferenceEdit)
             {
-                references = new[]
-                {
-                    AiGenerationReferenceImage.Create(capture.ReplacementPatchPng, "image/png"),
-                };
+                var images = new List<AiGenerationReferenceImage>();
+                if (styleReference != null)
+                    images.Add(AiGenerationReferenceImage.Create(styleReference, "image/png"));
+                images.Add(AiGenerationReferenceImage.Create(capture.ReplacementPatchPng, "image/png"));
+                references = images;
                 operation = AiGenerationOperation.ReferenceEdit;
             }
             request = new AiGenerationRequest(

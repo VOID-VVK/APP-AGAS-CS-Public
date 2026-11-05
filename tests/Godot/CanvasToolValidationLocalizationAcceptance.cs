@@ -32,6 +32,7 @@ public partial class CanvasToolValidationLocalizationAcceptance : Node
             Dictionary<string, byte[]> before = Snapshot(home);
             var failures = new[]
             {
+                CanvasToolRunResult.Fail(CanvasToolRunErrorCodes.ChainRequired, "请先把工具加入工具链，再从画布右键工具箱运行。"),
                 CanvasToolRunResult.Fail(CanvasToolRunErrorCodes.ContextUnavailable, "请先选中可编辑图层中的图片。"),
                 CanvasToolRunResult.Fail(CanvasToolRunErrorCodes.ToolChanged, "所选工具在执行期间发生变化，请刷新后重试。"),
                 CanvasToolRunResult.Fail(CanvasToolRunErrorCodes.ContextStale, "执行期间项目、场景、图层或所选图片已变化，结果未应用。"),

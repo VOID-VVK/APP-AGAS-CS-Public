@@ -189,7 +189,17 @@ public partial class CanvasAiContextMenuAcceptance : Node
         Button toolboxMenuButton = FindRequired<Button>(workspace, "CanvasToolboxMenuButton");
         toolboxMenuButton.EmitSignal(BaseButton.SignalName.Pressed);
         await Frames(2);
-        Require(menu.Visible, "The visible toolbox button must open the same canvas context menu.");
+        Require(!menu.Visible && bottomTabs.CurrentTab == 1 && bottomTabs.IsVisibleInTree(),
+            "The visible toolbox button must open management without an execution menu.");
+        FindRequired<Button>(workspace, "BottomDockToggleButton").EmitSignal(BaseButton.SignalName.Pressed);
+        bottomTabs.CurrentTab = 0;
+        canvas._GuiInput(new InputEventMouseButton
+        {
+            ButtonIndex = MouseButton.Right,
+            Pressed = true,
+            Position = requestedPosition
+        });
+        await Frames(2);
 
         menu.EmitSignal(PopupMenu.SignalName.IdPressed, 1L);
         await Frames(3);

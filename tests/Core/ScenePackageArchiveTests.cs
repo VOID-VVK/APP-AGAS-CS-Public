@@ -124,7 +124,7 @@ public sealed class ScenePackageArchiveTests
     }
 
     [Fact]
-    public void Extract_RejectsManifestOverOneMiB()
+    public void Extract_RejectsManifestOverByteBudget()
     {
         using var fixture = new Fixture();
         string archivePath = fixture.CreateArchive(

@@ -61,7 +61,7 @@ public partial class MainWorkspace
 
         try
         {
-            return _mcpScenePackageStaging.CaptureExport(scene, $"pkg-{Guid.NewGuid():N}");
+            return _mcpScenePackageStaging.CaptureExport(scene, $"pkg-{Guid.NewGuid():N}", _imageTools);
         }
         catch
         {
@@ -101,6 +101,8 @@ public partial class MainWorkspace
             if (!built.Success || built.Scene == null)
                 return AgasMcpScenePackagePublishResult.Fail(built.Code);
             AgasSceneResource scene = built.Scene;
+            ScenePackageDocument document = ScenePackageCodec.Deserialize(prepared.ManifestText);
+            if (document.Toolbox != null) _imageTools.ImportSnapshot(document.Toolbox);
             _project.Scenes.Add(new SceneIndexResource
             {
                 Id = scene.Id,

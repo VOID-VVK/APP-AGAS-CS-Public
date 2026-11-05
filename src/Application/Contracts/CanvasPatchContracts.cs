@@ -172,6 +172,7 @@ public sealed class CanvasPatchCapture
     private readonly byte[] _sourceCanvasPng;
     private readonly byte[] _maskPng;
     private readonly byte[] _replacementPatchPng;
+    private readonly byte[]? _styleReferencePng;
 
     internal CanvasPatchCapture(
         CanvasGridRegion referenceRegion,
@@ -185,7 +186,8 @@ public sealed class CanvasPatchCapture
         byte[] replacementPatchPng,
         string contentFingerprint,
         CanvasCompositeItem? targetItem,
-        CanvasPatchGenerationMode generationMode)
+        CanvasPatchGenerationMode generationMode,
+        byte[]? styleReferencePng = null)
     {
         ReferenceRegion = referenceRegion;
         ReplacementRegion = replacementRegion;
@@ -199,6 +201,7 @@ public sealed class CanvasPatchCapture
         ContentFingerprint = contentFingerprint;
         TargetItem = targetItem?.Clone();
         GenerationMode = generationMode;
+        _styleReferencePng = styleReferencePng is null ? null : (byte[])styleReferencePng.Clone();
     }
 
     public CanvasGridRegion ReferenceRegion { get; }
@@ -210,6 +213,7 @@ public sealed class CanvasPatchCapture
     public byte[] SourceCanvasPng => (byte[])_sourceCanvasPng.Clone();
     public byte[] MaskPng => (byte[])_maskPng.Clone();
     public byte[] ReplacementPatchPng => (byte[])_replacementPatchPng.Clone();
+    public byte[]? StyleReferencePng => _styleReferencePng is null ? null : (byte[])_styleReferencePng.Clone();
     public string ContentFingerprint { get; }
     public CanvasCompositeItem? TargetItem { get; }
     public CanvasPatchGenerationMode GenerationMode { get; }
